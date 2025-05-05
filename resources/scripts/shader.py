@@ -48,6 +48,27 @@ class Shader:
 
         self.ID = ID
 
+    def activate(self):
+        GL.glUseProgram(self.ID)
+
+    def setBool(self, uniformName: str, value: bool):
+        GL.glUniform1i(GL.glGetUniformLocation(self.ID, uniformName), value)
+
+    def setInt(self, uniformName: str, value: int):
+        GL.glUniform1i(GL.glGetUniformLocation(self.ID, uniformName), value)
+
+    def setFloat(self, uniformName: str, value: float):
+        GL.glUniform1f(GL.glGetUniformLocation(self.ID, uniformName), value)
+        
+    def setVec4f(self, uniformName: str, v0: float, v1: float, v2:float, v3: float):
+        GL.glUniform4f(GL.glGetUniformLocation(self.ID, uniformName), v0, v1, v2, v3)
+    
+    def setVec3f(self, uniformName: str, v0: float, v1: float, v2:float):
+        GL.glUniform3f(GL.glGetUniformLocation(self.ID, uniformName), v0, v1, v2)
+    
+    def setVec2f(self, uniformName: str, v0: float, v1: float):
+        GL.glUniform2f(GL.glGetUniformLocation(self.ID, uniformName), v0, v1)
+
 
 
 def _checkShaderCompile(shader: None):
