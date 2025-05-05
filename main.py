@@ -10,9 +10,9 @@ from resources.scripts.shader import Shader
 NULL_PTR = ctypes.c_void_p(0)
 
 vertices = [
-    -0.5, -0.5, 0.0,
-     0.5, -0.5, 0.0,
-     0.0,  0.5, 0.0
+    -0.5, -0.5, 0.0, 1.0, 0.0, 0.0,
+     0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
+     0.0,  0.5, 0.0, 0.0, 0.0, 1.0
 ]
 
 vertices = np.array(vertices, dtype=np.float32)
@@ -51,15 +51,15 @@ def main():
     GL.glBindVertexArray(VAO)
 
     GL.glBindBuffer(GL.GL_ARRAY_BUFFER, VBO)
-    GL.glBufferData(GL.GL_ARRAY_BUFFER, 48, vertices, GL.GL_STATIC_DRAW)
+    GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(ctypes.c_float) * len(vertices), vertices, GL.GL_STATIC_DRAW)
 
-    GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 3 * sizeof(ctypes.c_float), NULL_PTR)
+    GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 6 * sizeof(ctypes.c_float), NULL_PTR)
     GL.glEnableVertexAttribArray(0)
+    GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, GL.GL_FALSE, 6 * sizeof(ctypes.c_float), ctypes.c_void_p(3 * sizeof(ctypes.c_float)))
+    GL.glEnableVertexAttribArray(1)
 
     GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
     GL.glBindVertexArray(0)
-
-    print(s.ID)
 
     GL.glClearColor(0.0, 0.0, 0.0, 0.0)
 
@@ -73,6 +73,7 @@ def main():
 
         GL.glBindVertexArray(VAO)
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
+        GL.glBindVertexArray(0)
 
         GLFW.swap_buffers(window)
         GLFW.poll_events()
