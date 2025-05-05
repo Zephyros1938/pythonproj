@@ -45,22 +45,42 @@ def main():
 
     s = Shader("resources/shaders/test.vert", "resources/shaders/test.frag")
 
+    # vertex buffer object
+    #   stores vertex data and is tied to the VAO
     VBO = GL.glGenBuffers(1)
+    # vertex array object
+    #   holds vbos
     VAO = GL.glGenVertexArrays(1)
 
+    # tell the gpu that this is the VAO being used
     GL.glBindVertexArray(VAO)
 
+    # bind the VBO
     GL.glBindBuffer(GL.GL_ARRAY_BUFFER, VBO)
+    # add the data (vertices)
+    # GL_ARRAY_BUFFER
+    #   tell gpu this is an array of vertices
+    # sizeof * len
+    #   tell gpu the size of the buffer
+    # vertices
+    #   send vertices to gpu
+    # GL_STATIC_DRAW
+    #   statically draw the buffer, do not expect changes
     GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(ctypes.c_float) * len(vertices), vertices, GL.GL_STATIC_DRAW)
 
+    # first 3 elements are position, total size is 6 as it stores (position, color)
     GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 6 * sizeof(ctypes.c_float), NULL_PTR)
     GL.glEnableVertexAttribArray(0)
+    # colors
     GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, GL.GL_FALSE, 6 * sizeof(ctypes.c_float), ctypes.c_void_p(3 * sizeof(ctypes.c_float)))
     GL.glEnableVertexAttribArray(1)
 
+    # unbind the VBO
     GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+    # unbind the VAO
     GL.glBindVertexArray(0)
 
+    # tell gpu that the background color is black
     GL.glClearColor(0.0, 0.0, 0.0, 0.0)
 
     # show the window
