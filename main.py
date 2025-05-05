@@ -1,7 +1,21 @@
 import OpenGL.GL as GL
+from OpenGL.GL.ARB.arrays_of_arrays import sizeof
 import OpenGL.GLUT as GLUT
 import glfw as GLFW
+import numpy as np
+import ctypes
+from ctypes import sizeof
 from resources.scripts.shader import Shader
+
+NULL_PTR = ctypes.c_void_p(0)
+
+vertices = [
+    -0.5, -0.5, 0.0,
+     0.5, -0.5, 0.0,
+     0.0,  0.5, 0.0
+]
+
+vertices = np.array(vertices, dtype=np.float32)
 
 def main():
     # makes sure that GLFW is initialized
@@ -31,7 +45,23 @@ def main():
 
     s = Shader("resources/shaders/test.vert",  "resources/shaders/test.frag")
 
+    VBO = GL.glGenBuffers(1)
+    VAO = GL.glGenVertexArrays(1)
+
+    GL.glBindVertexArray(VAO)
+
+    GL.glBindBuffer(GL.GL_ARRAY_BUFFER, VBO)
+    GL.glBufferData(GL.GL_ARRAY_BUFFER, 48, vertices, GL.GL_STATIC_DRAW)
+
+    GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 3 * sizeof(ctypes.c_float), NULL_PTR)
+    GL.glEnableVertexAttribArray(0)
+
+    GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+    GL.glBindVertexArray(0)
+
     print(s.ID)
+
+    GL.glClearColor(0.0, 0.0, 0.0, 0.0)
 
     # show the window
     GLFW.show_window(window)
@@ -39,6 +69,11 @@ def main():
     # main loop
     while not GLFW.window_should_close(window):
         GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+        GL.glUseProgram(s.ID)
+
+        GL.glBindVertexArray(VAO)
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
+
         GLFW.swap_buffers(window)
         GLFW.poll_events()
 
