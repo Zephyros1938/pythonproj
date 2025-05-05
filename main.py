@@ -42,6 +42,7 @@ def main():
 
 # key callback for pressing keys in window
 def key_callback(window: GLFW._GLFWwindow, key: int, scancode: int, action: int, mods: int):
+    # if
     if key == GLFW.KEY_ESCAPE:
         GLFW.set_window_should_close(window, GLFW.TRUE);
     else:
