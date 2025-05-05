@@ -1,45 +1,52 @@
 import OpenGL.GL as GL
 import OpenGL.GLUT as GLUT
-import ctypes
-import glfw
-
+import glfw as GLFW
 
 def main():
     # makes sure that GLFW is initialized
-    if not glfw.init():
+    if not GLFW.init():
         raise Exception("Failed to intialize GLFW!")
 
     # set window hints
-    glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
-    glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
-    glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
-    glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, glfw.TRUE)
-    glfw.window_hint(glfw.VISIBLE, glfw.FALSE)
+    GLFW.window_hint(GLFW.CONTEXT_VERSION_MAJOR, 3)
+    GLFW.window_hint(GLFW.CONTEXT_VERSION_MINOR, 3)
+    GLFW.window_hint(GLFW.OPENGL_PROFILE, GLFW.OPENGL_CORE_PROFILE)
+    GLFW.window_hint(GLFW.OPENGL_FORWARD_COMPAT, GLFW.TRUE)
+    GLFW.window_hint(GLFW.VISIBLE, GLFW.FALSE)
 
     # create window
-    window = glfw.create_window(800, 600, "GLFW Window", None, None)
+    window = GLFW.create_window(800, 600, "GLFW Window", None, None)
 
     # make sure that window was created
     if not window:
-        glfw.terminate()
+        GLFW.terminate()
         raise Exception("Failed to create GLFW Window!")
 
-    # set glfw's current window
-    glfw.make_context_current(window)
-    
-    
+    # set GLFW's current window
+    GLFW.make_context_current(window)
+
+    # set callbacks
+    GLFW.set_key_callback(window, key_callback)
 
     # show the window
-    glfw.show_window(window)
+    GLFW.show_window(window)
 
     # main loop
-    while not glfw.window_should_close(window):
-        glfw.swap_buffers(window)
-        glfw.poll_events()
+    while not GLFW.window_should_close(window):
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+        GLFW.swap_buffers(window)
+        GLFW.poll_events()
 
     # terminates GLFW
-    glfw.terminate()
+    GLFW.terminate()
 
+# key callback for pressing keys in window
+def key_callback(window: GLFW._GLFWwindow, key: int, scancode: int, action: int, mods: int):
+    if key == GLFW.KEY_ESCAPE:
+        GLFW.set_window_should_close(window, GLFW.TRUE);
+    else:
+        if action == GLFW.RELEASE:
+            print(chr(key))
 
 if __name__ == "__main__":
     main()
