@@ -1,6 +1,7 @@
 import OpenGL.GL as GL
 import OpenGL.GLUT as GLUT
 import glfw as GLFW
+from resources.scripts.shader import Shader
 
 def main():
     # makes sure that GLFW is initialized
@@ -28,6 +29,10 @@ def main():
     # set callbacks
     GLFW.set_key_callback(window, key_callback)
 
+    s = Shader("resources/shaders/test.vert",  "resources/shaders/test.frag")
+
+    print(s.ID)
+
     # show the window
     GLFW.show_window(window)
 
@@ -42,7 +47,7 @@ def main():
 
 # key callback for pressing keys in window
 def key_callback(window: GLFW._GLFWwindow, key: int, scancode: int, action: int, mods: int):
-    # if
+    # if ESC is pressed, close window
     if key == GLFW.KEY_ESCAPE:
         GLFW.set_window_should_close(window, GLFW.TRUE);
     else:

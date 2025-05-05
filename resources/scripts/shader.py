@@ -1,0 +1,75 @@
+import OpenGL.GL as GL
+
+class Shader:
+    def __init__(self, vertexPath: str, fragmentPath: str):
+        vertexCode: str
+        fragmentCode: str
+
+        # get vertex shader code
+        try:
+            print(f"[INFO] Reading vertex code: {vertexPath}")
+            with open(vertexPath, "r") as f:
+                vertexCode = f.read()
+            print(f"[INFO] Finished reading vertex code {vertexPath}")
+        except:
+            raise Exception(f"[ERROR] Failed to read vertex code {vertexPath}")
+
+        # get fragment shader code
+        try:
+            print(f"[INFO] Reading fragment code: {fragmentPath}")
+            with open(fragmentPath, "r") as f:
+                fragmentCode = f.read()
+            print(f"[INFO] Finished reading fragment code {fragmentPath}")
+        except:
+            raise Exception(f"[ERROR] Failed to read fragment code {fragmentPath}")
+
+        # make vertex shader
+        vertexShader = GL.glCreateShader(GL.GL_VERTEX_SHADER);
+        GL.glShaderSource(vertexShader, vertexCode);
+        GL.glCompileShader(vertexShader);
+        _checkShaderCompile(vertexShader)
+
+        # make fragment shader
+        fragmentShader = GL.glCreateShader(GL.GL_FRAGMENT_SHADER);
+        GL.glShaderSource(fragmentShader, fragmentCode);
+        GL.glCompileShader(fragmentShader);
+        _checkShaderCompile(fragmentShader)
+
+        # make shader program
+        ID = GL.glCreateProgram();
+        GL.glAttachShader(ID, vertexShader)
+        GL.glAttachShader(ID, fragmentShader)
+        GL.glLinkProgram(ID)
+        _checkProgramLink(ID)
+
+        # delete unecessary memory allocation (python already has enough of that lol)
+        GL.glDeleteShader(vertexShader)
+        GL.glDeleteShader(fragmentShader)
+
+        self.ID = ID
+
+
+
+def _checkShaderCompile(shader: None):
+    success = GL.glGetShaderiv(shader, GL.GL_COMPILE_STATUS)
+    if not success:
+        log_length = GL.glGetShaderiv(shader, GL.GL_INFO_LOG_LENGTH)
+        if log_length > 0:
+            info_log = GL.glGetShaderInfoLog(shader)
+            raise Exception(f"[ERROR] Shader Compilation failed:\n{info_log.decode('utf-8')}")
+        else:
+            raise Exception("[ERROR] Shader Compilation failed:\nUnknown Error")
+    else:
+        print("[INFO] Shader Compiled Successfully")
+
+def _checkProgramLink(program: None):
+    success = GL.glGetProgramiv(program, GL.GL_LINK_STATUS)
+    if not success:
+        log_length = GL.glGetProgramiv(program, GL.GL_INFO_LOG_LENGTH)
+        if log_length > 0:
+            info_log = GL.glGetProgramInfoLog(program)
+            raise Exception(f"[ERROR] Program Linking failed:\n{info_log.decode('utf-8')}")
+        else:
+            raise Exception("[ERROR] Program Linking failed:\nUnknown Error")
+    else:
+        print("[INFO] Program Linked Successfully")
