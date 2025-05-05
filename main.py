@@ -1,6 +1,5 @@
 import OpenGL.GL as GL
-from OpenGL.GL.ARB.arrays_of_arrays import sizeof
-import OpenGL.GLUT as GLUT
+# import OpenGL.GLUT as GLUT
 import glfw as GLFW
 import numpy as np
 import ctypes
@@ -10,6 +9,7 @@ from resources.scripts.shader import Shader
 NULL_PTR = ctypes.c_void_p(0)
 
 vertices = [
+#   X     Y     Z    R    G    B
     -0.5, -0.5, 0.0, 1.0, 0.0, 0.0,
      0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
      0.0,  0.5, 0.0, 0.0, 0.0, 1.0
@@ -43,7 +43,7 @@ def main():
     # set callbacks
     GLFW.set_key_callback(window, key_callback)
 
-    s = Shader("resources/shaders/test.vert",  "resources/shaders/test.frag")
+    s = Shader("resources/shaders/test.vert", "resources/shaders/test.frag")
 
     VBO = GL.glGenBuffers(1)
     VAO = GL.glGenVertexArrays(1)
