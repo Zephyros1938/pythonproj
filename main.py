@@ -169,6 +169,17 @@ def process_input(window: GLFW._GLFWwindow):
         CAMERA.process_keyboard(2, DELTATIME)
     if GLFW.get_key(window, GLFW.KEY_D) == GLFW.PRESS:
         CAMERA.process_keyboard(3, DELTATIME)
+    if not GLFW.get_key(window, GLFW.KEY_LEFT_SHIFT) == GLFW.PRESS:
+        if GLFW.get_key(window, GLFW.KEY_LEFT_CONTROL) == GLFW.PRESS:
+            CAMERA.process_keyboard(4, DELTATIME)
+        if GLFW.get_key(window, GLFW.KEY_SPACE) == GLFW.PRESS:
+            CAMERA.process_keyboard(5, DELTATIME)
+    else:
+        if GLFW.get_key(window, GLFW.KEY_LEFT_CONTROL) == GLFW.PRESS:
+            CAMERA.process_keyboard(6, DELTATIME)
+        if GLFW.get_key(window, GLFW.KEY_SPACE) == GLFW.PRESS:
+            CAMERA.process_keyboard(7, DELTATIME)
+
 
 def cursor_pos_callback(window: GLFW._GLFWwindow, x:int, y:int):
     if GLFW.get_input_mode(window, GLFW.CURSOR) == GLFW.CURSOR_DISABLED:

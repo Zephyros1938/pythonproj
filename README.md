@@ -8,7 +8,7 @@ git clone https://github.com/zephyros1938/pythonproj.git
 
 cd pythonproj
 
-py -m pip install -r requirements.txt --break-system-packages
+./.venv/bin/pip install -r requirements.txt
 
-py main.py
+./.venv/bin/python main.py
 ```

@@ -42,6 +42,19 @@ class Camera3D:
         return perspective(radians(self.zoom), self.aspect_ratio, self.near, self.far)
 
     def process_keyboard(self, direction: int, delta_time: float):
+        """
+            Processes movement for the CAMERA
+
+            Movement values:
+                - 0 = forward
+                - 1 = backward
+                - 2 = left
+                - 3 = right
+                - 4 = up
+                - 5 = down
+                - 6 = up (world)
+                - 7 = down (world)
+        """
         velocity = self.move_speed * delta_time
         if direction == 0:
             self.position += self.front * velocity
@@ -51,6 +64,14 @@ class Camera3D:
             self.position -= self.right * velocity
         elif direction == 3:
             self.position += self.right * velocity
+        elif direction == 4:
+            self.position -= self.up * velocity
+        elif direction == 5:
+            self.position += self.up * velocity
+        elif direction == 6:
+            self.position -= self.world_up * velocity
+        elif direction == 7:
+            self.position += self.world_up * velocity
 
     def process_mouse(self, xoffset: float, yoffset: float):
         xoffset *= self.mouse_sensitivity
@@ -66,7 +87,7 @@ class Camera3D:
 
     def process_scroll(self, yoffset: float):
         self.zoom -= yoffset
-        self.zoom = max(min(self.zoom, 45.0), 1.0)  # Match your MIN_ZOOM and MAX_ZOOM constants
+        self.zoom = max(min(self.zoom, 45.0), 1.0)
 
     def update_vectors(self):
         front = vec3(
