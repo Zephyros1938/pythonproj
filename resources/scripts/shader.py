@@ -1,5 +1,7 @@
 import OpenGL.GL as GL
-from glm import vec4, mat4, value_ptr, vec3, vec2
+from pyglm.glm import vec4, mat4, value_ptr, vec3, vec2
+import ctypes
+import numpy as np
 
 class Shader:
     def __init__(self, vertexPath: str, fragmentPath: str, drawmode = GL.GL_TRIANGLES):
@@ -83,6 +85,37 @@ class Shader:
     def setMat4fv(self, uniformName: str, mat: mat4):
         GL.glUniformMatrix4fv(GL.glGetUniformLocation(self.ID, uniformName), 1, GL.GL_FALSE, value_ptr(mat))
 
+class ShaderBuilder:
+    def __init__(self,vertexPath: str, fragmentPath: str, vertexSize: int, drawmode = GL.GL_TRIANGLES):
+        self.shader = Shader(vertexPath, fragmentPath, drawmode)
+        self.VAO = GL.glGenVertexArrays(1)
+        self.VBOs: dict[str, int] = {}
+        self.vertexSize = vertexSize
+        self.attributeIndex = 0
+    def genVBO(self, vboName: str):
+        if vboName in self.VBOs:
+            raise Exception(f"VBO {vboName} already generated!")
+        self.VBOs[vboName] = GL.glGenBuffers(1)
+        return self
+    def bindVBO(self, vboName: str):
+        GL.glBindVertexArray(self.VAO)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.VBOs[vboName])
+        self.attributeIndex = 0
+        return self
+    def VBOdata(self, data: list[float]):
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, ctypes.sizeof(ctypes.c_float) * len(data), np.array(data, dtype=np.float32), GL.GL_STATIC_DRAW)
+        return self
+    def setAttribute(self, loc: int, dataSize: int):
+        GL.glVertexAttribPointer(loc, dataSize, GL.GL_FLOAT, GL.GL_FALSE, self.vertexSize * ctypes.sizeof(ctypes.c_float), ctypes.c_void_p(self.attributeIndex * ctypes.sizeof(ctypes.c_float)))
+        GL.glEnableVertexAttribArray(loc)
+        self.attributeIndex += dataSize
+        return self
+    def pack(self):
+        GL.glBindVertexArray(0)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        if self.attributeIndex != self.vertexSize:
+            print(f"[WARN] Attribute index {self.attributeIndex} does not equal Vertex Size {self.vertexSize}!\r\n\tDid you set your attributes correctly?")
+        return (self.shader, self.VAO)
 
 
 def _checkShaderCompile(shader: None):

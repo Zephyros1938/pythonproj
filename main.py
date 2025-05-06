@@ -4,10 +4,9 @@ import numpy as np
 import ctypes
 from ctypes import sizeof
 
-from pyglm.glm import translate, rotate, scale
-from resources.scripts.shader import Shader
+from pyglm.glm import translate, rotate, scale, ivec2, mat4, vec3, radians
+from resources.scripts.shader import Shader, ShaderBuilder
 from resources.scripts.camera.camera3d import Camera3D
-from glm import ivec2, mat4, vec3, radians
 
 NULL_PTR = ctypes.c_void_p(0)
 VIEWPORT = ivec2(800, 600)
@@ -32,8 +31,6 @@ vertices = [
      0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
      0.0,  0.5, 0.0, 0.0, 0.0, 1.0
 ]
-
-s = None
 
 def main():
     global FIRSTMOUSE
@@ -66,42 +63,7 @@ def main():
     GLFW.set_cursor_pos_callback(window, cursor_pos_callback)
     GLFW.set_scroll_callback(window, scroll_callback)
 
-    SHADERS["main"] = Shader("resources/shaders/test.vert", "resources/shaders/test.frag")
-
-    # vertex buffer object
-    #   stores vertex data and is tied to the VAO
-    VBO = GL.glGenBuffers(1)
-    # vertex array object
-    #   holds vbos
-    VAO = GL.glGenVertexArrays(1)
-
-    # tell the gpu that this is the VAO being used
-    GL.glBindVertexArray(VAO)
-
-    # bind the VBO
-    GL.glBindBuffer(GL.GL_ARRAY_BUFFER, VBO)
-    # add the data (vertices)
-    # GL_ARRAY_BUFFER
-    #   tell gpu this is an array of vertices
-    # sizeof * len
-    #   tell gpu the size of the buffer
-    # vertices
-    #   send vertices to gpu
-    # GL_STATIC_DRAW
-    #   statically draw the buffer, do not expect changes
-    GL.glBufferData(GL.GL_ARRAY_BUFFER, sizeof(ctypes.c_float) * len(vertices), np.array(vertices, dtype=np.float32), GL.GL_STATIC_DRAW)
-
-    # first 3 elements are position, total size is 6 as it stores (position, color)
-    GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 6 * sizeof(ctypes.c_float), NULL_PTR)
-    GL.glEnableVertexAttribArray(0)
-    # colors
-    GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, GL.GL_FALSE, 6 * sizeof(ctypes.c_float), ctypes.c_void_p(3 * sizeof(ctypes.c_float)))
-    GL.glEnableVertexAttribArray(1)
-
-    # unbind the VBO
-    GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-    # unbind the VAO
-    GL.glBindVertexArray(0)
+    SHADERS["main"], svao = ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 6).genVBO("main").bindVBO("main").VBOdata(vertices).setAttribute(0, 3).setAttribute(1, 3).pack()
 
     # tell gpu that the background color is black
     GL.glClearColor(0.0, 0.0, 0.0, 0.0)
@@ -124,14 +86,15 @@ def main():
     while not GLFW.window_should_close(window):
         update_deltatime()
         process_input(window)
-        GL.glClear(GL.GL_DEPTH_BUFFER_BIT)
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+        GL.glClear(GL.GL_DEPTH_BUFFER_BIT) # clear the depth buffer (3d)
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT) # clear the color buffer
 
         SHADERS["main"].activate()
         SHADERS["main"].setMat4fv("view", CAMERA.getViewMatrix())
         SHADERS["main"].setMat4fv("projection", CAMERA.getProjectionMatrix())
+        SHADERS["main"].setMat4fv("model", model)
 
-        GL.glBindVertexArray(VAO)
+        GL.glBindVertexArray(svao)
         GL.glDrawArrays(SHADERS["main"].DRAWMODE, 0, 3)
         GL.glBindVertexArray(0)
 
