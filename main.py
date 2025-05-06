@@ -1,8 +1,6 @@
 import OpenGL.GL as GL
 import glfw as GLFW
-import numpy as np
 import ctypes
-from ctypes import sizeof
 
 from pyglm.glm import translate, rotate, scale, ivec2, mat4, vec3, radians
 from resources.scripts.shader import Shader, ShaderBuilder
@@ -143,6 +141,11 @@ def process_input(window: GLFW._GLFWwindow):
             CAMERA.process_keyboard(6, DELTATIME)
         if GLFW.get_key(window, GLFW.KEY_SPACE) == GLFW.PRESS:
             CAMERA.process_keyboard(7, DELTATIME)
+    
+    if GLFW.get_key(window, GLFW.KEY_UP) == GLFW.PRESS:
+    if GLFW.get_key(window, GLFW.KEY_DOWN) == GLFW.PRESS:
+    if GLFW.get_key(window, GLFW.KEY_LEFT) == GLFW.PRESS:
+    if GLFW.get_key(window, GLFW.KEY_RIGHT) == GLFW.PRESS:
 
 
 def cursor_pos_callback(window: GLFW._GLFWwindow, x:int, y:int):

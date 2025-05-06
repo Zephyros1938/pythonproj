@@ -3,7 +3,10 @@ set -e  # Exit on error
 
 clear
 
-cat .logo
-echo $COLUMNS
+if [ "$COLUMNS" -gt 170 ]; then
+    cat .logobig
+else
+    cat .logo
+fi
 
 ./.venv/bin/python main.py
