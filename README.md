@@ -6,7 +6,7 @@ A project made by [Zephyros](https://github.com/Zephyros1938) and [PiffleV](http
 
 This project is developed primarily on Linux systems (specifically Arch-based distributions). As a result, **we do not guarantee full compatibility or stability on Windows or macOS**.
 
-If you encounter any issues, please [open an issue](https://github.com/Zephyros1938/pythonproj/issues/new/choose) on the GitHub repository.
+If you encounter any issues/bugs, please [open an issue](https://github.com/Zephyros1938/pythonproj/issues/new/choose).
 
 ## How to Run
 
