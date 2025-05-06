@@ -4,13 +4,10 @@ import numpy as np
 import ctypes
 from ctypes import sizeof
 
-<<<<<<< HEAD
-=======
 from pyglm.glm import translate, rotate, scale, ivec2, mat4, vec3, radians
 from resources.scripts.shader import Shader, ShaderBuilder
 from resources.scripts.camera.camera3d import Camera3D
 
->>>>>>> origin/main
 # null pointer
 NULL_PTR = ctypes.c_void_p(0)
 VIEWPORT = ivec2(800, 600)
@@ -21,8 +18,6 @@ FIRSTMOUSE: bool  = False
 LAST_X : float = 0
 LAST_Y : float = 0
 
-<<<<<<< HEAD
-=======
 model = mat4(1.0)
 model = translate(model, vec3(0.0, 0.0, -5.0))
 model = rotate(model, radians(45.0), vec3(0.0, 1.0, 0.0))
@@ -31,7 +26,6 @@ model = scale(model, vec3(1.0))
 
 CAMERA = Camera3D()
 
->>>>>>> origin/main
 # triangle color points for drawing later
 vertices = [
 #   X     Y     Z    R    G    B
@@ -71,39 +65,7 @@ def main():
     GLFW.set_cursor_pos_callback(window, cursor_pos_callback)
     GLFW.set_scroll_callback(window, scroll_callback)
 
-<<<<<<< HEAD
-    # read at resources\scripts\shader.py 
-    s = Shader("resources/shaders/test.vert", "resources/shaders/test.frag")
-
-    # get 1 buffer name and 1 vertex array name
-    VBO = GL.glGenBuffers(1)
-    VAO = GL.glGenVertexArrays(1)
-
-    # activate vertex arrays
-    GL.glBindVertexArray(VAO)
-
-    # Binds buffer to array, Initializes Buffer
-    GL.glBindBuffer(GL.GL_ARRAY_BUFFER, VBO)
-    GL.glBufferData(GL.GL_ARRAY_BUFFER, # Buffer to initialize
-                    sizeof(ctypes.c_float) * len(vertices),  # Buffer size 
-                    vertices, # Pointer for initialization
-                    GL.GL_STATIC_DRAW # Used for drawing
-                    )
-
-    # Build the Array
-    GL.glVertexAttribPointer(0, 3, GL.GL_FLOAT, GL.GL_FALSE, 6 * sizeof(ctypes.c_float), NULL_PTR)
-    GL.glEnableVertexAttribArray(0)
-    GL.glVertexAttribPointer(1, 3, GL.GL_FLOAT, GL.GL_FALSE, 6 * sizeof(ctypes.c_float), ctypes.c_void_p(3 * sizeof(ctypes.c_float)))
-    GL.glEnableVertexAttribArray(1)
-    
-    # Deactivate everything
-    GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
-    GL.glBindVertexArray(0)
-
-    # Colors to use glClear with
-=======
     SHADERS["main"], svao = ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 6).genVBO("main").bindVBO("main").VBOdata(vertices).setAttribute(0, 3).setAttribute(1, 3).pack()
->>>>>>> origin/main
     GL.glClearColor(0.0, 0.0, 0.0, 0.0)
     GL.glViewport(0, 0, VIEWPORT.x, VIEWPORT.y);
 
@@ -122,15 +84,6 @@ def main():
 
     # main loop
     while not GLFW.window_should_close(window):
-<<<<<<< HEAD
-        # Clear window?
-        GL.glClear(GL.GL_COLOR_BUFFER_BIT)
-        GL.glUseProgram(s.ID)
-
-        # Array drawing
-        GL.glBindVertexArray(VAO)
-        GL.glDrawArrays(GL.GL_TRIANGLES, 0, 3)
-=======
         update_deltatime()
         process_input(window)
         GL.glClear(GL.GL_DEPTH_BUFFER_BIT) # clear the depth buffer (3d)
@@ -143,7 +96,6 @@ def main():
 
         GL.glBindVertexArray(svao)
         GL.glDrawArrays(SHADERS["main"].DRAWMODE, 0, 3)
->>>>>>> origin/main
         GL.glBindVertexArray(0)
 
         # Draw window
