@@ -1,7 +1,8 @@
 import OpenGL.GL as GL
+from glm import vec4, mat4, value_ptr, vec3, vec2
 
 class Shader:
-    def __init__(self, vertexPath: str, fragmentPath: str):
+    def __init__(self, vertexPath: str, fragmentPath: str, drawmode = GL.GL_TRIANGLES):
         vertexCode: str
         fragmentCode: str
 
@@ -47,6 +48,7 @@ class Shader:
         GL.glDeleteShader(fragmentShader)
 
         self.ID = ID
+        self.DRAWMODE = drawmode
 
     def activate(self):
         GL.glUseProgram(self.ID)
@@ -59,15 +61,27 @@ class Shader:
 
     def setFloat(self, uniformName: str, value: float):
         GL.glUniform1f(GL.glGetUniformLocation(self.ID, uniformName), value)
-        
+
     def setVec4f(self, uniformName: str, v0: float, v1: float, v2:float, v3: float):
         GL.glUniform4f(GL.glGetUniformLocation(self.ID, uniformName), v0, v1, v2, v3)
-    
+
+    def setVec4fv(self, uniformName: str, v: vec4):
+        GL.glUniform4fv(GL.glGetUniformLocation(self.ID, uniformName), value_ptr(v))
+
     def setVec3f(self, uniformName: str, v0: float, v1: float, v2:float):
         GL.glUniform3f(GL.glGetUniformLocation(self.ID, uniformName), v0, v1, v2)
-    
+
+    def setVec3fv(self, uniformName: str, v: vec3):
+        GL.glUniform3fv(GL.glGetUniformLocation(self.ID, uniformName), value_ptr(v))
+
     def setVec2f(self, uniformName: str, v0: float, v1: float):
         GL.glUniform2f(GL.glGetUniformLocation(self.ID, uniformName), v0, v1)
+
+    def setVec2fv(self, uniformName: str, v: vec2):
+        GL.glUniform2fv(GL.glGetUniformLocation(self.ID, uniformName), value_ptr(v))
+
+    def setMat4fv(self, uniformName: str, mat: mat4):
+        GL.glUniformMatrix4fv(GL.glGetUniformLocation(self.ID, uniformName), 1, GL.GL_FALSE, value_ptr(mat))
 
 
 
