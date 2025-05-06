@@ -1,6 +1,6 @@
 # pythonproj
 
-A project made by [Zephyros](https://github.com/Zephyros1938) and [PiffleV](https://github.com/PiffleV) for a CS1 project
+A project made by [Zephyros](https://github.com/Zephyros1938) and [PiffleV](https://github.com/PiffleV) for our CS1 EOY class
 
 ## About
 
