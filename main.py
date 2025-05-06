@@ -8,6 +8,7 @@ from pyglm.glm import translate, rotate, scale, ivec2, mat4, vec3, radians
 from resources.scripts.shader import Shader, ShaderBuilder
 from resources.scripts.camera.camera3d import Camera3D
 
+# null pointer
 NULL_PTR = ctypes.c_void_p(0)
 VIEWPORT = ivec2(800, 600)
 SHADERS: dict[str, Shader] = {}
@@ -25,11 +26,12 @@ model = scale(model, vec3(1.0))
 
 CAMERA = Camera3D()
 
+# triangle color points for drawing later
 vertices = [
 #   X     Y     Z    R    G    B
     -0.5, -0.5, 0.0, 1.0, 0.0, 0.0,
      0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
-     0.0,  0.5, 0.0, 0.0, 0.0, 1.0
+     0.0,  0.5, 0.0, 0.0, 0.0, 1.0,
 ]
 
 def main():
@@ -64,8 +66,6 @@ def main():
     GLFW.set_scroll_callback(window, scroll_callback)
 
     SHADERS["main"], svao = ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 6).genVBO("main").bindVBO("main").VBOdata(vertices).setAttribute(0, 3).setAttribute(1, 3).pack()
-
-    # tell gpu that the background color is black
     GL.glClearColor(0.0, 0.0, 0.0, 0.0)
     GL.glViewport(0, 0, VIEWPORT.x, VIEWPORT.y);
 
@@ -98,6 +98,7 @@ def main():
         GL.glDrawArrays(SHADERS["main"].DRAWMODE, 0, 3)
         GL.glBindVertexArray(0)
 
+        # Draw window
         GLFW.swap_buffers(window)
         GLFW.poll_events()
 
