@@ -1,4 +1,0 @@
-glfw
-pyopengl
-pyglm
-numpy
