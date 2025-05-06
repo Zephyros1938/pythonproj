@@ -1,7 +1,10 @@
 import OpenGL.GL as GL
+from pyglm.glm import vec4, mat4, value_ptr, vec3, vec2
+import ctypes
+import numpy as np
 
 class Shader:
-    def __init__(self, vertexPath: str, fragmentPath: str):
+    def __init__(self, vertexPath: str, fragmentPath: str, drawmode = GL.GL_TRIANGLES):
         vertexCode: str
         fragmentCode: str
 
@@ -47,7 +50,72 @@ class Shader:
         GL.glDeleteShader(fragmentShader)
 
         self.ID = ID
+        self.DRAWMODE = drawmode
 
+    def activate(self):
+        GL.glUseProgram(self.ID)
+
+    def setBool(self, uniformName: str, value: bool):
+        GL.glUniform1i(GL.glGetUniformLocation(self.ID, uniformName), value)
+
+    def setInt(self, uniformName: str, value: int):
+        GL.glUniform1i(GL.glGetUniformLocation(self.ID, uniformName), value)
+
+    def setFloat(self, uniformName: str, value: float):
+        GL.glUniform1f(GL.glGetUniformLocation(self.ID, uniformName), value)
+
+    def setVec4f(self, uniformName: str, v0: float, v1: float, v2:float, v3: float):
+        GL.glUniform4f(GL.glGetUniformLocation(self.ID, uniformName), v0, v1, v2, v3)
+
+    def setVec4fv(self, uniformName: str, v: vec4):
+        GL.glUniform4fv(GL.glGetUniformLocation(self.ID, uniformName), value_ptr(v))
+
+    def setVec3f(self, uniformName: str, v0: float, v1: float, v2:float):
+        GL.glUniform3f(GL.glGetUniformLocation(self.ID, uniformName), v0, v1, v2)
+
+    def setVec3fv(self, uniformName: str, v: vec3):
+        GL.glUniform3fv(GL.glGetUniformLocation(self.ID, uniformName), value_ptr(v))
+
+    def setVec2f(self, uniformName: str, v0: float, v1: float):
+        GL.glUniform2f(GL.glGetUniformLocation(self.ID, uniformName), v0, v1)
+
+    def setVec2fv(self, uniformName: str, v: vec2):
+        GL.glUniform2fv(GL.glGetUniformLocation(self.ID, uniformName), value_ptr(v))
+
+    def setMat4fv(self, uniformName: str, mat: mat4):
+        GL.glUniformMatrix4fv(GL.glGetUniformLocation(self.ID, uniformName), 1, GL.GL_FALSE, value_ptr(mat))
+
+class ShaderBuilder:
+    def __init__(self,vertexPath: str, fragmentPath: str, vertexSize: int, drawmode = GL.GL_TRIANGLES):
+        self.shader = Shader(vertexPath, fragmentPath, drawmode)
+        self.VAO = GL.glGenVertexArrays(1)
+        self.VBOs: dict[str, int] = {}
+        self.vertexSize = vertexSize
+        self.attributeIndex = 0
+    def genVBO(self, vboName: str):
+        if vboName in self.VBOs:
+            raise Exception(f"VBO {vboName} already generated!")
+        self.VBOs[vboName] = GL.glGenBuffers(1)
+        return self
+    def bindVBO(self, vboName: str):
+        GL.glBindVertexArray(self.VAO)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.VBOs[vboName])
+        self.attributeIndex = 0
+        return self
+    def VBOdata(self, data: list[float]):
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, ctypes.sizeof(ctypes.c_float) * len(data), np.array(data, dtype=np.float32), GL.GL_STATIC_DRAW)
+        return self
+    def setAttribute(self, loc: int, dataSize: int):
+        GL.glVertexAttribPointer(loc, dataSize, GL.GL_FLOAT, GL.GL_FALSE, self.vertexSize * ctypes.sizeof(ctypes.c_float), ctypes.c_void_p(self.attributeIndex * ctypes.sizeof(ctypes.c_float)))
+        GL.glEnableVertexAttribArray(loc)
+        self.attributeIndex += dataSize
+        return self
+    def pack(self):
+        GL.glBindVertexArray(0)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
+        if self.attributeIndex != self.vertexSize:
+            print(f"[WARN] Attribute index {self.attributeIndex} does not equal Vertex Size {self.vertexSize}!\r\n\tDid you set your attributes correctly?")
+        return (self.shader, self.VAO)
 
 
 def _checkShaderCompile(shader: None):
