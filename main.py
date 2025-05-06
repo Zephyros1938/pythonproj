@@ -2,7 +2,7 @@ import OpenGL.GL as GL
 import glfw as GLFW
 import ctypes
 
-from pyglm.glm import translate, rotate, scale, ivec2, mat4, vec3, radians
+from pyglm.glm import lookAt, translate, rotate, scale, ivec2, mat4, vec3
 from resources.scripts.shader import Shader, ShaderBuilder
 from resources.scripts.camera.camera3d import Camera3D
 
@@ -18,8 +18,8 @@ LAST_Y : float = 0
 
 model = mat4(1.0)
 model = translate(model, vec3(0.0, 0.0, -5.0))
-model = rotate(model, radians(45.0), vec3(0.0, 1.0, 0.0))
-model = scale(model, vec3(1.0))
+# model = rotate(model, radians(45.0), vec3(0.0, 1.0, 0.0))
+model = scale(model, vec3(10.0))
 
 
 CAMERA = Camera3D()
@@ -141,11 +141,15 @@ def process_input(window: GLFW._GLFWwindow):
             CAMERA.process_keyboard(6, DELTATIME)
         if GLFW.get_key(window, GLFW.KEY_SPACE) == GLFW.PRESS:
             CAMERA.process_keyboard(7, DELTATIME)
-    
+    global model
     if GLFW.get_key(window, GLFW.KEY_UP) == GLFW.PRESS:
+        model = rotate(model, -DELTATIME, vec3(1,0,0))
     if GLFW.get_key(window, GLFW.KEY_DOWN) == GLFW.PRESS:
+        model = rotate(model, DELTATIME, vec3(1,0,0))
     if GLFW.get_key(window, GLFW.KEY_LEFT) == GLFW.PRESS:
+        model = rotate(model, -DELTATIME, vec3(0,1,0))
     if GLFW.get_key(window, GLFW.KEY_RIGHT) == GLFW.PRESS:
+        model = rotate(model, DELTATIME, vec3(0,1,0))
 
 
 def cursor_pos_callback(window: GLFW._GLFWwindow, x:int, y:int):
