@@ -124,9 +124,17 @@ class ShaderBuilder:
         if self.attributeIndex != self.vertexSize:
             print(f"[WARN] Attribute index {self.attributeIndex} does not equal Vertex Size {self.vertexSize}!\r\n\tDid you set your attributes correctly?")
         return (self.shader, self.VAO)
-    def fromVerticeModel(self, model: VerticeModel):
-        pass
+    def fromVerticeModel(self, model: VerticeModel, indexes: list[tuple[int, int]]):
+        if len(model.verticeMeshes.items()) != len(indexes):
+            raise Exception(f"model has {len(model.verticeMeshes.items())} VerticeMeshes but got indexes with length {len(indexes)}!")
+        items = list(model.verticeMeshes.items())
+        for n in range(len(items)):
+            name = items[n][0]
+            vertices = items[n][1]
+            attribute = indexes[n]
 
+            self = self.genVBO(name).bindVBO(name).VBOdata(vertices.vertices).setAttribute(attribute[0], attribute[1])
+        return self.pack()
 
 def _checkShaderCompile(shader: None):
     success = GL.glGetShaderiv(shader, GL.GL_COMPILE_STATUS)

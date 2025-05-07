@@ -69,16 +69,7 @@ def main():
     GLFW.set_cursor_pos_callback(window, cursor_pos_callback)
     GLFW.set_scroll_callback(window, scroll_callback)
 
-    SHADERS["main"], svao = (ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 3)
-        .genVBO("vertices")
-        .bindVBO("vertices")
-        .VBOdata(vertices.vertices)
-        .setAttribute(0, 3)
-        .genVBO("colors")
-        .bindVBO("colors")
-        .VBOdata(colors.vertices)
-        .setAttribute(1, 3)
-        .pack()
+    SHADERS["main"], svao = ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 3).fromVerticeModel(verticeModel, [(0, 3), (1, 3)]
     )
     GL.glClearColor(0.0, 0.0, 0.0, 0.0)
     GL.glViewport(0, 0, VIEWPORT.x, VIEWPORT.y);
