@@ -4,15 +4,15 @@ import ctypes
 
 from pyglm.glm import lookAt, translate, rotate, scale, ivec2, mat4, vec3
 from resources.scripts.shader import Shader, ShaderBuilder
+from resources.scripts.verticeMesh import VerticeMesh
+from resources.scripts.verticeModel import VerticeModel
 from resources.scripts.camera.camera3d import Camera3D
 
-# null pointer
-NULL_PTR = ctypes.c_void_p(0)
 VIEWPORT = ivec2(800, 600)
 SHADERS: dict[str, Shader] = {}
 DELTATIME: float  = 0.0
 LASTFRAME: float  = 0.0
-FIRSTMOUSE: bool  = False
+FIRSTMOUSE: bool  = True
 LAST_X : float = 0
 LAST_Y : float = 0
 
@@ -25,12 +25,18 @@ model = scale(model, vec3(10.0))
 CAMERA = Camera3D()
 
 # triangle color points for drawing later
-vertices = [
-#   X     Y     Z    R    G    B
-    -0.5, -0.5, 0.0, 1.0, 0.0, 0.0,
-     0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
-     0.0,  0.5, 0.0, 0.0, 0.0, 1.0,
-]
+# XYZ, RGB
+vertices = VerticeMesh([
+    -0.5, -0.5, 0.0,
+     0.5, -0.5, 0.0,
+     0.0,  0.5, 0.0
+])
+colors = VerticeMesh([
+    1.0, 0.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 0.0, 1.0
+])
+verticeModel = VerticeModel({"vertices": vertices, "colors": colors})
 
 def main():
     global FIRSTMOUSE
@@ -63,7 +69,17 @@ def main():
     GLFW.set_cursor_pos_callback(window, cursor_pos_callback)
     GLFW.set_scroll_callback(window, scroll_callback)
 
-    SHADERS["main"], svao = ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 6).genVBO("main").bindVBO("main").VBOdata(vertices).setAttribute(0, 3).setAttribute(1, 3).pack()
+    SHADERS["main"], svao = (ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 3)
+        .genVBO("vertices")
+        .bindVBO("vertices")
+        .VBOdata(vertices.vertices)
+        .setAttribute(0, 3)
+        .genVBO("colors")
+        .bindVBO("colors")
+        .VBOdata(colors.vertices)
+        .setAttribute(1, 3)
+        .pack()
+    )
     GL.glClearColor(0.0, 0.0, 0.0, 0.0)
     GL.glViewport(0, 0, VIEWPORT.x, VIEWPORT.y);
 
@@ -72,13 +88,11 @@ def main():
     SHADERS["main"].setMat4fv("projection", CAMERA.getProjectionMatrix())
     SHADERS["main"].setMat4fv("view", CAMERA.getViewMatrix())
 
-
     # show the window
     GLFW.show_window(window)
 
     # capture the cursor
     GLFW.set_input_mode(window, GLFW.CURSOR, GLFW.CURSOR_DISABLED)
-    FIRSTMOUSE = True
 
     # main loop
     while not GLFW.window_should_close(window):
@@ -92,9 +106,7 @@ def main():
         SHADERS["main"].setMat4fv("projection", CAMERA.getProjectionMatrix())
         SHADERS["main"].setMat4fv("model", model)
 
-        GL.glBindVertexArray(svao)
-        GL.glDrawArrays(SHADERS["main"].DRAWMODE, 0, 3)
-        GL.glBindVertexArray(0)
+        verticeModel.draw(SHADERS["main"], svao)
 
         # Draw window
         GLFW.swap_buffers(window)

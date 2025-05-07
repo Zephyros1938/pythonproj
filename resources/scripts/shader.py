@@ -86,6 +86,7 @@ class Shader:
         GL.glUniformMatrix4fv(GL.glGetUniformLocation(self.ID, uniformName), 1, GL.GL_FALSE, value_ptr(mat))
 
 class ShaderBuilder:
+    from resources.scripts.verticeModel import VerticeModel
     def __init__(self,vertexPath: str, fragmentPath: str, vertexSize: int, drawmode = GL.GL_TRIANGLES):
         self.shader = Shader(vertexPath, fragmentPath, drawmode)
         self.VAO = GL.glGenVertexArrays(1)
@@ -98,17 +99,24 @@ class ShaderBuilder:
         self.VBOs[vboName] = GL.glGenBuffers(1)
         return self
     def bindVBO(self, vboName: str):
-        GL.glBindVertexArray(self.VAO)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.VBOs[vboName])
         self.attributeIndex = 0
         return self
     def VBOdata(self, data: list[float]):
-        GL.glBufferData(GL.GL_ARRAY_BUFFER, ctypes.sizeof(ctypes.c_float) * len(data), np.array(data, dtype=np.float32), GL.GL_STATIC_DRAW)
+        GL.glBufferData(
+            GL.GL_ARRAY_BUFFER,
+            ctypes.sizeof(ctypes.c_float) * len(data),
+            np.array(data, dtype=np.float32),
+            GL.GL_STATIC_DRAW
+        )
         return self
     def setAttribute(self, loc: int, dataSize: int):
+        GL.glBindVertexArray(self.VAO)
+        print(f"[INFO] attribute set at [{self.attributeIndex}]")
         GL.glVertexAttribPointer(loc, dataSize, GL.GL_FLOAT, GL.GL_FALSE, self.vertexSize * ctypes.sizeof(ctypes.c_float), ctypes.c_void_p(self.attributeIndex * ctypes.sizeof(ctypes.c_float)))
         GL.glEnableVertexAttribArray(loc)
         self.attributeIndex += dataSize
+        GL.glBindVertexArray(0)
         return self
     def pack(self):
         GL.glBindVertexArray(0)
@@ -116,6 +124,8 @@ class ShaderBuilder:
         if self.attributeIndex != self.vertexSize:
             print(f"[WARN] Attribute index {self.attributeIndex} does not equal Vertex Size {self.vertexSize}!\r\n\tDid you set your attributes correctly?")
         return (self.shader, self.VAO)
+    def fromVerticeModel(self, model: VerticeModel):
+        pass
 
 
 def _checkShaderCompile(shader: None):
