@@ -4,4 +4,4 @@ This file contains a list of all documented classes & explainations of functiona
 
 ## Table of Contents
 
-- [`Shader` class](docs/shader.md)
+- [`Shader` class](shader.md)
