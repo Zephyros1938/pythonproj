@@ -9,6 +9,15 @@ The `Shader` class is used to quicken the process of compiling shaders for OpenG
 ## Table of Contents
 
 1. [Use](#use)
+2. [Requirements](#requirements)
+3. [Initialization](#initialization)
+4. [Variables](#variables)
+5. [Methods](#methods)
+6. [Uniform Management](#uniform-management)
+7. [Error Handling](#error-handling)
+8. [Examples](#examples)
+9. [Notes](#notes)
+10. [Changelog](#changelog)
 
 ---
 
@@ -139,6 +148,8 @@ shader.setMat4fv("view", view)
 ## Notes
 
 - Intended to be used on OpenGL versions 3.3+
+
+---
 
 ## Changelog
 
