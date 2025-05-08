@@ -1,7 +1,7 @@
 import OpenGL.GL as GL
 import glfw as GLFW
-
 import threading
+
 from numpy import pi, radians, sin, cos
 from pyglm.glm import lookAt, translate, rotate, scale, ivec2, mat4, vec3, distance, length
 from resources.scripts.shader import Shader, ShaderBuilder
@@ -10,6 +10,7 @@ from resources.scripts.verticeModel import VerticeModel
 from resources.scripts.camera.camera3d import Camera3D
 from resources.scripts.glfwUtilities import getKeyPressed
 from resources.scripts.window import Window
+from resources.scripts.texture import Texture
 
 VIEWPORT = ivec2(800, 600)
 SHADERS: dict[str, Shader] = {}
@@ -20,24 +21,50 @@ LAST_X : float = 0
 LAST_Y : float = 0
 
 model = mat4(1.0)
-model = translate(model, vec3(0.0, 0.0, -5.0))
-model = scale(model, vec3(10.0))
-
+model = translate(model, vec3(0.0, 0.0, 0.0))
+model = scale(model, vec3(5.0))
 
 CAMERA = Camera3D(move_speed=20, far=1000)
 
 # triangle color points for drawing later
 # XYZ, RGB
+
 vertices = VerticeMesh([
-    -0.5, -0.5, 0.0,
-     0.5, -0.5, 0.0,
-     0.0,  0.5, 0.0
+    0.0, 0.5, 0.0,
+    -0.5, 0.0, 0.5,
+    0.5, 0.0, 0.5,
+
+    0.0, 0.5, 0.0,
+    -0.5, 0.0, -0.5,
+    -0.5, 0.0, 0.5,
+
+    0.0, 0.5, 0.0,
+    0.5, 0.0, 0.5,
+    0.5, 0.0, -0.5,
+
+    0.0, 0.5, 0.0,
+    0.5, 0.0, -0.5,
+    -0.5, 0.0, -0.5,
+
+    0.0, -0.5, 0.0,
+    0.5, 0.0, 0.5,
+    -0.5, 0.0, 0.5,
+
+    0.0, -0.5, 0.0,
+    -0.5, 0.0, 0.5,
+    -0.5, 0.0, -0.5,
+
+    0.0, -0.5, 0.0,
+    0.5, 0.0, -0.5,
+    0.5, 0.0, 0.5,
+
+    0.0, -0.5, 0.0,
+    -0.5, 0.0, -0.5,
+    0.5, 0.0, -0.5,
+
 ])
-colors = VerticeMesh([
-    1.0, 0.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 0.0, 1.0
-])
+colors = VerticeMesh([0.0 if i % 9 in [1, 2, 3, 5, 6, 7] else 1.0 for i in range(len(vertices.vertices))])
+
 verticeModel = VerticeModel({"vertices": vertices, "colors": colors})
 
 window = Window( viewport=(VIEWPORT.x, VIEWPORT.y))
@@ -45,6 +72,7 @@ window = Window( viewport=(VIEWPORT.x, VIEWPORT.y))
 def main():
     global FIRSTMOUSE, model
     GL.glEnable(GL.GL_DEPTH_TEST)
+    GL.glEnable(GL.GL_CULL_FACE)
 
     # set callbacks
     GLFW.set_key_callback(window.handle, key_callback)
@@ -56,8 +84,6 @@ def main():
 
     GL.glClearColor(0.0, 0.0, 0.0, 0.0)
 
-
-
     SHADERS["main"].activate()
     SHADERS["main"].setMat4fv("model", model)
     SHADERS["main"].setMat4fv("projection", CAMERA.getProjectionMatrix())
@@ -66,25 +92,31 @@ def main():
     # capture the cursor
     GLFW.set_input_mode(window.handle, GLFW.CURSOR, GLFW.CURSOR_DISABLED)
 
-    t0 = 15
-    t1 = 100
-    t2 = 15
+    t0 = 25
+    t1 = 25
+    t2 = 25
     t = [vec3(x, y, z) for x in range(-t0, t0+1) for y in range(-t1, t1+1) for z in range(-t2, t2+1)]
 
     # show the window
     window.show()
     GL.glViewport(0, 0, VIEWPORT.x, VIEWPORT.y)
 
+    tt: Texture = Texture("resources/textures/egg.png", "")
 
     def fps_notify():
         from time import sleep
         global DELTATIME
+        averageFps = 0
+        updateRate = 1.0
         while True:
             if DELTATIME <= 0:
-                print("[FPS] inf")
+                print(f"[FPS] C: inf\tAVERAGE: {averageFps}")
             else:
-                print(f"[FPS] {1.0 / DELTATIME:.2f}")
-            sleep(1)  # Print FPS once per second
+                fps = updateRate / DELTATIME
+                averageFps += fps
+                averageFps /= 2
+                print(f"[FPS] C: {fps:.2f}\tAVERAGE: {averageFps:.2f}")
+            sleep(updateRate)  # Print FPS once per second
 
     # Start the thread
     fps_notify_thread = threading.Thread(target=fps_notify, daemon=True)
@@ -101,10 +133,10 @@ def main():
         SHADERS["main"].setMat4fv("view", CAMERA.getViewMatrix())
         SHADERS["main"].setMat4fv("projection", CAMERA.getProjectionMatrix())
 
-        movepos = vec3(cos(GLFW.get_time()) * 7.5, sin(GLFW.get_time()) * 7.5, sin(GLFW.get_time() + (pi/2)) * 7.5)
-        cullsize = ((cos(GLFW.get_time() * 3)+2)/2) * 5
+        movepos = vec3(cos(GLFW.get_time()) * 7.5, 0.0, sin(GLFW.get_time()) * 7.5)
+        cullsize = 5.0
         filtered = [n for n in t if length(movepos - n) <= cullsize]
-        for n in [translate(mat4(1.0), n) for n in filtered]:
+        for n in [translate(model, n) for n in filtered]:
             # print(f"[Render] Drawing model matrix: {n}")
             SHADERS["main"].activate()
             SHADERS["main"].setMat4fv("model", n)

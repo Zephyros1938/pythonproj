@@ -1,4 +1,6 @@
 glfw
+numpy
 pyopengl
 pyglm
-numpy
+pyassimp
+stbpy
