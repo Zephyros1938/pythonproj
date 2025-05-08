@@ -29,6 +29,10 @@ python -m venv .venv
 ./.venv/bin/python main.py
 ```
 
+# Documentation
+
+See the [Documentation page](docs/documentation.md)
+
 # License
 
 This project is licensed under the Apache 2.0 License.
