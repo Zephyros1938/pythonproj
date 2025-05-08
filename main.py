@@ -1,12 +1,15 @@
 import OpenGL.GL as GL
 import glfw as GLFW
-import ctypes
 
-from pyglm.glm import lookAt, translate, rotate, scale, ivec2, mat4, vec3
+import threading
+from numpy import pi, radians, sin, cos
+from pyglm.glm import lookAt, translate, rotate, scale, ivec2, mat4, vec3, distance, length
 from resources.scripts.shader import Shader, ShaderBuilder
 from resources.scripts.verticeMesh import VerticeMesh
 from resources.scripts.verticeModel import VerticeModel
 from resources.scripts.camera.camera3d import Camera3D
+from resources.scripts.glfwUtilities import getKeyPressed
+from resources.scripts.window import Window
 
 VIEWPORT = ivec2(800, 600)
 SHADERS: dict[str, Shader] = {}
@@ -18,11 +21,10 @@ LAST_Y : float = 0
 
 model = mat4(1.0)
 model = translate(model, vec3(0.0, 0.0, -5.0))
-# model = rotate(model, radians(45.0), vec3(0.0, 1.0, 0.0))
 model = scale(model, vec3(10.0))
 
 
-CAMERA = Camera3D()
+CAMERA = Camera3D(move_speed=20, far=1000)
 
 # triangle color points for drawing later
 # XYZ, RGB
@@ -38,70 +40,79 @@ colors = VerticeMesh([
 ])
 verticeModel = VerticeModel({"vertices": vertices, "colors": colors})
 
+window = Window( viewport=(VIEWPORT.x, VIEWPORT.y))
+
 def main():
-    global FIRSTMOUSE
-    # makes sure that GLFW is initialized
-    if not GLFW.init():
-        raise Exception("Failed to intialize GLFW!")
-
-    # set window hints
-    GLFW.window_hint(GLFW.CONTEXT_VERSION_MAJOR, 3)
-    GLFW.window_hint(GLFW.CONTEXT_VERSION_MINOR, 3)
-    GLFW.window_hint(GLFW.OPENGL_PROFILE, GLFW.OPENGL_CORE_PROFILE)
-    GLFW.window_hint(GLFW.OPENGL_FORWARD_COMPAT, GLFW.TRUE)
-    GLFW.window_hint(GLFW.VISIBLE, GLFW.FALSE)
-
-    # create window
-    window = GLFW.create_window(VIEWPORT.x, VIEWPORT.y, "GLFW Window", None, None)
-
-    # make sure that window was created
-    if not window:
-        GLFW.terminate()
-        raise Exception("Failed to create GLFW Window!")
-
-    # set GLFW's current window
-    GLFW.make_context_current(window)
+    global FIRSTMOUSE, model
     GL.glEnable(GL.GL_DEPTH_TEST)
 
     # set callbacks
-    GLFW.set_key_callback(window, key_callback)
-    GLFW.set_framebuffer_size_callback(window, framebuffer_resize_callback)
-    GLFW.set_cursor_pos_callback(window, cursor_pos_callback)
-    GLFW.set_scroll_callback(window, scroll_callback)
+    GLFW.set_key_callback(window.handle, key_callback)
+    GLFW.set_framebuffer_size_callback(window.handle, framebuffer_resize_callback)
+    GLFW.set_cursor_pos_callback(window.handle, cursor_pos_callback)
+    GLFW.set_scroll_callback(window.handle, scroll_callback)
 
-    SHADERS["main"], svao = ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 3).fromVerticeModel(verticeModel, [(0, 3), (1, 3)]
-    )
+    SHADERS["main"], svao = ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 3).fromVerticeModel(verticeModel, [(0, 3), (1, 3)])
+
     GL.glClearColor(0.0, 0.0, 0.0, 0.0)
-    GL.glViewport(0, 0, VIEWPORT.x, VIEWPORT.y);
+
+
 
     SHADERS["main"].activate()
     SHADERS["main"].setMat4fv("model", model)
     SHADERS["main"].setMat4fv("projection", CAMERA.getProjectionMatrix())
     SHADERS["main"].setMat4fv("view", CAMERA.getViewMatrix())
 
-    # show the window
-    GLFW.show_window(window)
-
     # capture the cursor
-    GLFW.set_input_mode(window, GLFW.CURSOR, GLFW.CURSOR_DISABLED)
+    GLFW.set_input_mode(window.handle, GLFW.CURSOR, GLFW.CURSOR_DISABLED)
+
+    t0 = 15
+    t1 = 100
+    t2 = 15
+    t = [vec3(x, y, z) for x in range(-t0, t0+1) for y in range(-t1, t1+1) for z in range(-t2, t2+1)]
+
+    # show the window
+    window.show()
+    GL.glViewport(0, 0, VIEWPORT.x, VIEWPORT.y)
+
+
+    def fps_notify():
+        from time import sleep
+        global DELTATIME
+        while True:
+            if DELTATIME <= 0:
+                print("[FPS] inf")
+            else:
+                print(f"[FPS] {1.0 / DELTATIME:.2f}")
+            sleep(1)  # Print FPS once per second
+
+    # Start the thread
+    fps_notify_thread = threading.Thread(target=fps_notify, daemon=True)
+    fps_notify_thread.start()
 
     # main loop
-    while not GLFW.window_should_close(window):
+    while not window.should_close():
         update_deltatime()
-        process_input(window)
+        process_input(window.handle)
         GL.glClear(GL.GL_DEPTH_BUFFER_BIT) # clear the depth buffer (3d)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT) # clear the color buffer
 
         SHADERS["main"].activate()
         SHADERS["main"].setMat4fv("view", CAMERA.getViewMatrix())
         SHADERS["main"].setMat4fv("projection", CAMERA.getProjectionMatrix())
-        SHADERS["main"].setMat4fv("model", model)
 
-        verticeModel.draw(SHADERS["main"], svao)
+        movepos = vec3(cos(GLFW.get_time()) * 7.5, sin(GLFW.get_time()) * 7.5, sin(GLFW.get_time() + (pi/2)) * 7.5)
+        cullsize = ((cos(GLFW.get_time() * 3)+2)/2) * 5
+        filtered = [n for n in t if length(movepos - n) <= cullsize]
+        for n in [translate(mat4(1.0), n) for n in filtered]:
+            # print(f"[Render] Drawing model matrix: {n}")
+            SHADERS["main"].activate()
+            SHADERS["main"].setMat4fv("model", n)
+            verticeModel.draw(SHADERS["main"], svao)
 
         # Draw window
-        GLFW.swap_buffers(window)
-        GLFW.poll_events()
+        window.swap_buffers()
+        window.poll_events()
 
     # terminates GLFW
     GLFW.terminate()
@@ -126,32 +137,32 @@ def key_callback(window: GLFW._GLFWwindow, k: int, sc: int, a: int, mod: int):
 # for continuous input, such as movement
 #   called per-frame
 def process_input(window: GLFW._GLFWwindow):
-    if GLFW.get_key(window, GLFW.KEY_W) == GLFW.PRESS:
+    if getKeyPressed(window, GLFW.KEY_W):
         CAMERA.process_keyboard(0, DELTATIME)
-    if GLFW.get_key(window, GLFW.KEY_S) == GLFW.PRESS:
+    if getKeyPressed(window, GLFW.KEY_S):
         CAMERA.process_keyboard(1, DELTATIME)
-    if GLFW.get_key(window, GLFW.KEY_A) == GLFW.PRESS:
+    if getKeyPressed(window, GLFW.KEY_A):
         CAMERA.process_keyboard(2, DELTATIME)
-    if GLFW.get_key(window, GLFW.KEY_D) == GLFW.PRESS:
+    if getKeyPressed(window, GLFW.KEY_D):
         CAMERA.process_keyboard(3, DELTATIME)
-    if not GLFW.get_key(window, GLFW.KEY_LEFT_SHIFT) == GLFW.PRESS:
-        if GLFW.get_key(window, GLFW.KEY_LEFT_CONTROL) == GLFW.PRESS:
+    if not getKeyPressed(window, GLFW.KEY_LEFT_SHIFT):
+        if getKeyPressed(window, GLFW.KEY_LEFT_CONTROL):
             CAMERA.process_keyboard(4, DELTATIME)
-        if GLFW.get_key(window, GLFW.KEY_SPACE) == GLFW.PRESS:
+        if getKeyPressed(window, GLFW.KEY_SPACE):
             CAMERA.process_keyboard(5, DELTATIME)
     else:
-        if GLFW.get_key(window, GLFW.KEY_LEFT_CONTROL) == GLFW.PRESS:
+        if getKeyPressed(window, GLFW.KEY_LEFT_CONTROL):
             CAMERA.process_keyboard(6, DELTATIME)
-        if GLFW.get_key(window, GLFW.KEY_SPACE) == GLFW.PRESS:
+        if getKeyPressed(window, GLFW.KEY_SPACE):
             CAMERA.process_keyboard(7, DELTATIME)
     global model
-    if GLFW.get_key(window, GLFW.KEY_UP) == GLFW.PRESS:
+    if getKeyPressed(window, GLFW.KEY_UP):
         model = rotate(model, -DELTATIME, vec3(1,0,0))
-    if GLFW.get_key(window, GLFW.KEY_DOWN) == GLFW.PRESS:
+    if getKeyPressed(window, GLFW.KEY_DOWN):
         model = rotate(model, DELTATIME, vec3(1,0,0))
-    if GLFW.get_key(window, GLFW.KEY_LEFT) == GLFW.PRESS:
+    if getKeyPressed(window, GLFW.KEY_LEFT):
         model = rotate(model, -DELTATIME, vec3(0,1,0))
-    if GLFW.get_key(window, GLFW.KEY_RIGHT) == GLFW.PRESS:
+    if getKeyPressed(window, GLFW.KEY_RIGHT):
         model = rotate(model, DELTATIME, vec3(0,1,0))
 
 
@@ -179,9 +190,8 @@ def scroll_callback(window: GLFW._GLFWwindow, _, yoffset: float):
 
 
 def framebuffer_resize_callback(window: GLFW._GLFWwindow, width: int, height: int):
-    VIEWPORT = ivec2(width, height)
-    GL.glViewport(0, 0, VIEWPORT.x, VIEWPORT.y)
-    CAMERA.set_aspect_ratio(VIEWPORT.x / VIEWPORT.y)
+    GL.glViewport(0, 0, width, height)
+    CAMERA.set_aspect_ratio(width / height)
 
 def update_deltatime():
     global LASTFRAME, DELTATIME
