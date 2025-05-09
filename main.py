@@ -1,3 +1,7 @@
+import lib
+
+lib.init()
+
 import OpenGL.GL as GL
 import glfw as GLFW
 import threading
@@ -11,6 +15,7 @@ from resources.scripts.camera.camera3d import Camera3D
 from resources.scripts.glfwUtilities import getKeyPressed
 from resources.scripts.window import Window
 from resources.scripts.texture import Texture
+
 
 VIEWPORT = ivec2(800, 600)
 SHADERS: dict[str, Shader] = {}

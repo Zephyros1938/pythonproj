@@ -7,31 +7,9 @@ from OpenGL.GL import GL_RED, GL_RG, GL_RGB, GL_RGBA, GL_UNSIGNED_BYTE, GLuint
 from ctypes import CDLL, pointer, c_int, byref, c_void_p, c_char_p, c_ubyte, cast as c_cast, POINTER
 import os.path as op
 
+from lib import get as getlib
 
-try:
-    import os
-    lib_dir = "./libraries"
-
-    if os.name == "posix":
-        stbi_path = op.abspath(op.join(lib_dir, "compiled", "stb_image", "stb_image.so"))
-    elif os.name == "nt":
-        stbi_path = op.abspath(op.join(lib_dir, "compiled", "stb_image", "stb_image.dll"))
-    else:
-        raise OSError("Unsupported operating system: " + os.name)
-
-    stbi = CDLL(stbi_path)
-
-except OSError as e:
-    raise Exception(f"[ERROR] Could not determine correct library path: {e}")
-except Exception as e:
-    raise Exception(f"[ERROR] Failed to load library: {e}")
-
-stbi.stbi_set_flip_vertically_on_load.argtypes = [c_int]
-stbi.stbi_load.argtypes = [c_char_p, POINTER(c_int), POINTER(c_int), POINTER(c_int), c_int]
-stbi.stbi_load.restype = POINTER(c_ubyte)
-stbi.stbi_image_free.argtypes = [POINTER(c_ubyte)]
-stbi.stbi_image_free.restype = None
-
+stb_image = getlib("stb_image")
 
 @dataclass
 class Texture:
@@ -79,9 +57,9 @@ class Texture:
             height = c_int()
             nrChannels = c_int()
 
-            stbi.stbi_set_flip_vertically_on_load(1 if flip else 0)
+            stb_image.stbi_set_flip_vertically_on_load(1 if flip else 0)
 
-            data = stbi.stbi_load(
+            data = stb_image.stbi_load(
                 op.abspath(path).encode("utf-8"),
                 byref(width),
                 byref(height),
@@ -120,7 +98,7 @@ class Texture:
             glGenerateMipmap(GL_TEXTURE_2D)
             print("[INFO]  Generated Mipmap")
 
-            stbi.stbi_image_free(data)
+            stb_image.stbi_image_free(data)
             self.id = texture_id.value
 
         except Exception as e:

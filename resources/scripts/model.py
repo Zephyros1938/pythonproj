@@ -1,3 +1,4 @@
+from asyncio.subprocess import Process
 
 from dataclasses import dataclass
 from pyglm.glm import vec2, vec3, value_ptr
@@ -86,5 +87,18 @@ class Mesh:
 
         glBindVertexArray(0)
 
+from pyassimp.
+
 @dataclass
 class Model:
+    textures_loaded = list[Texture]
+    meshes: list[Mesh]
+    directory: str
+    gammaCorrection: bool
+
+    def __init__(self, flags: int):
+
+
+    def draw(self, shader: Shader):
+        for m in self.meshes:
+            m.draw(shader)
