@@ -7,7 +7,7 @@ from OpenGL.GL import GL_RED, GL_RG, GL_RGB, GL_RGBA, GL_UNSIGNED_BYTE, GLuint
 from ctypes import pointer, c_int, byref, c_void_p, cast as c_cast
 import os
 
-from lib import get as getlib
+from lib import getlib as getlib
 
 stb_image = getlib("stb_image")
 

@@ -1,6 +1,10 @@
 import lib
-
 lib.init()
+
+logger = lib.getlib("logger")
+logger.init(lib.getEnum("logger", "LEVELS")["INFO"])
+
+logger.log(lib.getEnum("logger", "LEVELS")["INFO"], 2, "test".encode('utf-8'))
 
 import OpenGL.GL as GL
 import glfw as GLFW
