@@ -2,7 +2,7 @@
 
 LIBRARIES_DIR="libraries"                   # the directory where the libraries are located
 COMPILED_DIR="$LIBRARIES_DIR/compiled"      # where the compiled libraries go
-TO_COMPILE="stb_image test"                 # what needs to be compiled - seperate with spaces
+TO_COMPILE="stb_image test logger"                 # what needs to be compiled - seperate with spaces
 PURGE_LIBRARIES=1                           # removes all the compiled libraries before compilation
 SHOW_TO_COMPILE=1                           # shows what needs to be compiled
 SHOW_COMPILED=1                             # shows what was compiled

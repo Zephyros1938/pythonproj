@@ -4,8 +4,8 @@ from OpenGL.GL import GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER, GL_LINEAR, G
 from OpenGL.GL import glGenTextures, glBindTexture, glTexParameteri, glTexImage2D, glGenerateMipmap
 from OpenGL.GL import GL_RED, GL_RG, GL_RGB, GL_RGBA, GL_UNSIGNED_BYTE, GLuint
 
-from ctypes import CDLL, pointer, c_int, byref, c_void_p, c_char_p, c_ubyte, cast as c_cast, POINTER
-import os.path as op
+from ctypes import pointer, c_int, byref, c_void_p, cast as c_cast
+import os
 
 from lib import get as getlib
 
@@ -60,7 +60,7 @@ class Texture:
             stb_image.stbi_set_flip_vertically_on_load(1 if flip else 0)
 
             data = stb_image.stbi_load(
-                op.abspath(path).encode("utf-8"),
+                os.path.abspath(path).encode("utf-8"),
                 byref(width),
                 byref(height),
                 byref(nrChannels), 0)
@@ -102,7 +102,7 @@ class Texture:
             self.id = texture_id.value
 
         except Exception as e:
-            raise Exception(f"[ERROR] Failed to load image '{op.abspath(path)}' with error {e}")
+            raise Exception(f"[ERROR] Failed to load image '{os.path.abspath(path)}' with error {e}")
 
         self.type_s = type_s
         self.id = texture_id.value

@@ -38,11 +38,13 @@ libraries: dict[str, list[__cdll_function_def]] = {
                 [POINTER(c_ubyte)],
                 None
             )
-        ]
+        ],
+    "logger": []
 }
 
 def __set_lib_funcs(lib: CDLL, funcs: list[__cdll_function_def]):
     for f in funcs:
+        print(f"[LIB]   Setting function {f.fname}")
         func = getattr(lib, f.fname)
         func.argtypes = f.argtypes
         func.restype = f.restype
@@ -52,8 +54,9 @@ def init():
     global __initialized
     if __initialized:
         raise Exception("[ERROR] Libraries already initialized, cannot initialize again.")
+    print("[LIB] Initializing libraries")
     for lib, funcs in libraries.items():
-        print(f"[INFO] Loading library {lib}")
+        print(f"[LIB]  Loading library {lib}")
         l = __load_library(lib)
         __set_lib_funcs(l, funcs)
         _loaded_libraries[lib] = l

@@ -21,5 +21,5 @@ fi
 
 # Install dependencies
 echo "Installing dependencies..."
-./.venv/bin/pip install --disable-pip-version-check -r requirements.txt > /dev/null 2>&1
+./.venv/bin/pip install --disable-pip-version-check -r requirements.txt > /dev/null #2>&1
 echo "Successfully installed, you can run by using ./run.sh"

@@ -3,3 +3,4 @@ numpy
 pyopengl
 pyglm
 pyassimp
+logger
