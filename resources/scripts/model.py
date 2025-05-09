@@ -1,8 +1,9 @@
 
 from dataclasses import dataclass
-
 from pyglm.glm import vec2, vec3, value_ptr
-
+from OpenGL.GL import glActiveTexture, glBindTexture, glBindVertexArray, glDrawElements
+from OpenGL.GL import GL_TEXTURE0, GL_TEXTURE_2D
+from OpenGL.GL import GL_TRIANGLES, GL_UNSIGNED_INT
 from resources.scripts.shader import Shader
 
 @dataclass
@@ -31,7 +32,25 @@ class Mesh:
 
 
     def draw(self, shader: Shader):
-        pass
+        diffuseNr: int = 1;
+        specularNr: int = 1;
+        for i in range(len(self.textures)):
+            glActiveTexture(int(GL_TEXTURE0) + i)
+            number: str = ""
+            name: str = self.textures[i].type
+            if name=="texture_diffuse":
+                number = str(diffuseNr)
+                diffuseNr+=1
+            elif name=="texture_specular":
+                number = str(specularNr)
+                specularNr+=1
+            shader.setInt("material." + name + number, i)
+            glBindTexture(GL_TEXTURE_2D, self.textures[i].id)
+        glActiveTexture(GL_TEXTURE0)
+
+        glBindVertexArray(self.__VAO)
+        glDrawElements(GL_TRIANGLES, len(self.indices), GL_UNSIGNED_INT, 0)
+        glBindVertexArray(0)
 
     __VAO: int
     __VBO: int

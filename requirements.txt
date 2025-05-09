@@ -3,4 +3,3 @@ numpy
 pyopengl
 pyglm
 pyassimp
-stbpy
