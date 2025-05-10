@@ -1,18 +1,53 @@
-from ctypes import CDLL, POINTER
-from ctypes import c_char_p, c_ubyte, c_int
-from enum import Enum
+from ctypes import CDLL, POINTER, c_char_p, c_ubyte, c_int
+from enum import Enum, EnumMeta
+from typing import Any, Union
 import os
-from typing import Any, Type, Union
-LIBRARY_DIR = "./libraries"
-COMPILED_DIR = os.path.join(LIBRARY_DIR, "compiled")
 
+cstr = lambda s: s.encode('utf-8')
+
+#
+# Try not to use globals(), but rather LibraryStorage. If you are-
+# unable to use LibraryStorage, use __local_storage, but only in-
+# the last-case scenario.
+#
+# This is because definitions to globals() may cause issues if-
+# they have the same name as anything defined inside of this-
+# file.
+#
+# If you edit this file, you MUST put your username, what changes you-
+# put, and the date. This file is essential to this project and must-
+# function correctly.
+#
+# - Zephyros1938
+#
+
+__LIBRARY_DIR = "./libraries"
+__COMPILED_DIR = os.path.join(__LIBRARY_DIR, "compiled")
+
+__local_storage: dict[str, Any] = {};
 __initialized = False
 
-_loaded_libraries: dict[str, CDLL] = {}
-_loaded_enums: dict[str, type[Enum]] = {}
+class CEnumMeta(type):
+    _enumtype_: Union[EnumMeta, None]
+    _values_ : dict[Any, Any]
+    _name_: str
+    def __new__(mcs, name, bases, namespace):
+        cls = super().__new__(mcs, name, bases, namespace)
 
-class LibraryStorage(dict):
-    __libraries: dict[str, tuple[CDLL, dict[str, Enum]]] = {}
+        # auto extracts metadata if enum base is present
+        enum_base = next((b for b in bases if isinstance(b, EnumMeta)), None)
+        if enum_base:
+            cls._enumtype_ = enum_base
+            cls._values_ = {e._name_: e._value_ for e in enum_base}
+            cls._name_ = name
+        else:
+            cls._enumtype_ = None
+            cls._values_ = {}
+            cls._name_ = name
+        return cls
+
+class __LibraryStorage(dict):
+    __libraries: dict[str, tuple[CDLL, dict[str, type]]] = {}
 
     @classmethod
     def _addLibrary(cls, libName: str, library: CDLL):
@@ -23,50 +58,119 @@ class LibraryStorage(dict):
         return cls.__libraries[libName][0]
 
     @classmethod
-    def _addEnum(cls, libName: str, enumName: str, enum: Enum):
+    def _addEnum(cls, libName: str, enumName: str, enum: type):
         cls.__libraries[libName][1][enumName] = enum
 
     @classmethod
-    def _getEnum(cls, libName: str, enumName: str) -> Enum:
+    def _getEnum(cls, libName: str, enumName: str) -> type :
         return cls.__libraries[libName][1][enumName]
 
-
-
 def getlib(libName: str) -> CDLL:
-    return LibraryStorage._getLibrary(libName)
-def getEnum(libName: str, enumName: str) -> Enum:
-    return LibraryStorage._getEnum(libName, enumName)
-
+    return __LibraryStorage._getLibrary(libName)
+def getEnum(libName: str, enumName: str):
+    return __LibraryStorage._getEnum(libName, enumName)
+def getEnumV(libName: str, enumName: str, valueName: str):
+    return getattr(getEnum(libName, enumName), valueName).value
 
 class _cdll_enum_arg:
+    """Used when using an enum in a __cdll_function_def"""
     def __init__ (self, enumName: str):
         self.enumName = enumName
-
-class __cdll_function_def:
-    def __init__(self, fname: str, argtypes: list = [], restype: Any = None):
-        self.fname = fname
-        self.argtypes = argtypes
-        self.restype = restype
 
 class _cdll_enum:
     def __init__(self, enumName: str, enumValues: Union[dict[str, int], list[str]] = {}):
         self.enumName = enumName
         self.enumValues = enumValues
 
-class __cdll_enum_def:
-    """Should be placed after the __cdll_enum definition in libraries"""
+class __cdll_function_def:
+    """Used to define functions for CDLL\nThis should be placed after any _cdll_enum definitions if they are used in argtypes"""
     def __init__(self, fname: str, argtypes: list[Union[Any, _cdll_enum_arg]], restype: Any = None):
         self.fname = fname
         _argtypes = []
         for a in argtypes:
             if isinstance(a, _cdll_enum):
-                _argtypes.append(type(globals()[a.enumName]))
+                _argtypes.append(__local_storage[a.enumName])
             else:
                 _argtypes.append(a)
         self.argtypes = _argtypes
         self.restype = restype
 
-libraries: dict[str, list[Union[__cdll_function_def, _cdll_enum, __cdll_enum_def]]] = {
+def __dict_enum_to_c_enum(enum_name: str, enum_values: dict[str, int]):
+    """Converts a dictionary to a C-style enum."""
+    enum_type = Enum(enum_name + "Enum", enum_values)
+
+    class CEnumWrapper(metaclass=CEnumMeta):
+        def __init__(self, value: int | str):
+            if isinstance(value, str):
+                self.value = type(enum_type)[value].value
+            elif isinstance(value, int):
+                self.value = value
+            else:
+                raise TypeError(f"Invalid value type: {type(value)}")
+
+        @classmethod
+        def from_param(cls, obj):
+            return c_int(cls(obj).value)
+
+        def __int__(self):
+            return self.value
+
+        def __hash__(self):
+            return hash(self.value)
+
+        def __repr__(self):
+            for k, v in self._values_.items():
+                if v == self.value:
+                    return f"<{self._name_}.{k}: {v}>"
+            return f"<{self._name_}.UNKNOWN: {self.value}>"
+
+    # attach enum contents
+    for name, val in enum_values.items():
+        setattr(CEnumWrapper, name, CEnumWrapper(val))
+
+    return CEnumWrapper
+
+
+def __set_lib_funcs(lib: CDLL, libName: str, funcs: list[Union[__cdll_function_def, _cdll_enum]]):
+    for f in funcs:
+        if isinstance(f, __cdll_function_def):
+            print(f"[LIB INFO]   Setting function {libName}::{f.fname}")
+            func = getattr(lib, f.fname)
+            _argtypes = []
+            for f_ in f.argtypes:
+                if type(f_) == _cdll_enum_arg:
+                    _argtypes.append(__LibraryStorage._getEnum(libName, f_.enumName))
+                else:
+                    _argtypes.append(f_)
+            func.argtypes = _argtypes
+            func.restype = f.restype
+        elif isinstance(f, _cdll_enum):
+            print(f"[LIB INFO]   Setting enum {libName}::{f.enumName}")
+            if isinstance(f.enumValues, list):
+                enumValues = {f.enumValues[i]: i for i in range(len(f.enumValues))}
+            elif isinstance(f.enumValues, dict):
+                enumValues = f.enumValues
+            else:
+                raise ValueError(f"f.enumValues was {f.enumValues}, expected list/dict.")
+            enumClass = __dict_enum_to_c_enum(f.enumName, enumValues)
+            __LibraryStorage._addEnum(libName, f.enumName, enumClass)
+
+def __load_library(libname: str) -> CDLL:
+    if os.name == "posix":
+        lib_path = os.path.abspath(os.path.join(__COMPILED_DIR, libname, f"{libname}.so"))
+    elif os.name == "nt":
+        lib_path = os.path.abspath(os.path.join(__COMPILED_DIR, libname, f"{libname}.dll"))
+    else:
+        raise OSError("[LIB ERROR] Unsupported operating system: " + os.name)
+
+    try:
+        lib = CDLL(lib_path)
+        __local_storage[libname] = lib
+        return lib
+    except Exception as e:
+        raise Exception(f"[LIB ERROR] Failed to load library {libname}: {e}")
+
+libraries: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = {
     "stb_image":
         [
             __cdll_function_def
@@ -91,94 +195,57 @@ libraries: dict[str, list[Union[__cdll_function_def, _cdll_enum, __cdll_enum_def
         _cdll_enum
         (
             "LEVELS",
-            ["ERROR", "WARN", "INFO", "DEBUG", "TRACE"]
+            {"ERROR": 0, "WARN": 1, "INFO": 2, "DEBUG": 3, "TRACE": 4}
         ),
-        __cdll_enum_def
+        __cdll_function_def
         (
             "init",
             [_cdll_enum_arg("LEVELS")],
             None
         ),
-        __cdll_enum_def
+        __cdll_function_def
         (
-            "log",
-            [_cdll_enum_arg("LEVELS"), c_int, c_char_p],
+            "error",
+            [c_int, c_char_p],
+            None
+        ),
+        __cdll_function_def
+        (
+            "warn",
+            [c_int, c_char_p],
+            None
+        ),
+        __cdll_function_def
+        (
+            "info",
+            [c_int, c_char_p],
+            None
+        ),
+        __cdll_function_def
+        (
+            "debug",
+            [c_int, c_char_p],
+            None
+        ),
+        __cdll_function_def
+        (
+            "trace",
+            [c_int, c_char_p],
             None
         )
     ]
 }
 
-def __cdll_enum_to_class(enum_name: str, enum_values):
-    enum_type = Enum(enum_name, enum_values)
 
-    class CTypesEnum(c_int):
-        _values_ = enum_values
-        _enumtype_ = enum_type
-        _name_ = enum_name
-
-        @classmethod
-        def from_param(cls, obj):
-            if obj in cls._values_:
-                return cls(cls._values_[obj])
-
-
-    for name, value in enum_values.items():
-        setattr(CTypesEnum, name , CTypesEnum(value))
-    return CTypesEnum
-
-def __set_lib_funcs(lib: CDLL, libName: str, funcs: list[Union[__cdll_function_def, _cdll_enum, __cdll_enum_def]]):
-    for f in funcs:
-        if type(f) == __cdll_function_def:
-            print(f"[LIB]   Setting function {libName}::{f.fname}")
-            func = getattr(lib, f.fname)
-            func.argtypes = f.argtypes
-            func.restype = f.restype
-        elif type(f) == _cdll_enum:
-            print(f"[LIB]   Setting enum {libName}::{f.enumName}")
-            if isinstance(f.enumValues, list):
-                enumValues = {f.enumValues[i]: i for i in range(len(f.enumValues))}
-            elif isinstance(f.enumValues, dict):
-                enumValues = f.enumValues
-            else:
-                raise ValueError(f"f.enumValues was {f.enumValues}, expected list/dict.")
-            enumClass = __cdll_enum_to_class(f.enumName, enumValues)
-            globals()[f.enumName] = enumClass
-            LibraryStorage._addEnum(libName, f.enumName, enumClass._enumtype_)
-        elif type(f) == __cdll_enum_def:
-            print(f"[LIB]   Setting enum function {libName}::{f.fname}")
-            func = getattr(lib, f.fname)
-            _argtypes = []
-            for f_ in f.argtypes:
-                if type(f_) == _cdll_enum_arg:
-                    _argtypes.append(globals()[f_.enumName])
-                else:
-                    _argtypes.append(f_)
-            func.argtypes = _argtypes
-            func.restype = f.restype
-
-def __load_library(libname: str) -> CDLL:
-    if os.name == "posix":
-        lib_path = os.path.abspath(os.path.join(COMPILED_DIR, libname, f"{libname}.so"))
-    elif os.name == "nt":
-        lib_path = os.path.abspath(os.path.join(COMPILED_DIR, libname, f"{libname}.dll"))
-    else:
-        raise OSError("Unsupported operating system: " + os.name)
-
-    try:
-        lib = CDLL(lib_path)
-        globals()[libname] = lib
-        return lib
-    except Exception as e:
-        raise Exception(f"[ERROR] Failed to load library {libname}: {e}")
 
 def init():
     global __initialized
     if __initialized:
-        raise Exception("[ERROR] Libraries already initialized, cannot initialize again.")
-    print("[LIB] Initializing libraries")
+        raise Exception("[LIB ERROR] Libraries already initialized, cannot initialize again.")
+    print("[LIB INFO] Initializing libraries")
     for lib, items in libraries.items():
-        print(f"[LIB]  Loading library {lib}")
+        print(f"[LIB INFO]  Loading library {lib}")
         l = __load_library(lib)
-        LibraryStorage._addLibrary(lib, l)
+        __LibraryStorage._addLibrary(lib, l)
         __set_lib_funcs(l, lib, items)
     __initialized = True

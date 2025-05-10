@@ -3,26 +3,33 @@ from pyglm.glm import vec4, mat4, value_ptr, vec3, vec2
 import ctypes
 import numpy as np
 
+from lib import getlib, cstr
+logger = getlib("logger")
+info = logger.info
+error = logger.error
+
 class Shader:
     def __init__(self, vertexPath: str, fragmentPath: str, drawmode = GL.GL_TRIANGLES):
         vertexCode: str
         fragmentCode: str
 
+        info(1, cstr("Creating shader"))
+
         # get vertex shader code
         try:
-            print(f"[INFO] Reading vertex code: {vertexPath}")
+            info(2, cstr(f"Reading vertex code: {vertexPath}"))
             with open(vertexPath, "r") as f:
                 vertexCode = f.read()
-            print(f"[INFO] Finished reading vertex code {vertexPath}")
+            info(2, cstr(f"Finished reading vertex code {vertexPath}"))
         except:
             raise Exception(f"[ERROR] Failed to read vertex code {vertexPath}")
 
         # get fragment shader code
         try:
-            print(f"[INFO] Reading fragment code: {fragmentPath}")
+            info(2, cstr(f"Reading fragment code: {fragmentPath}"))
             with open(fragmentPath, "r") as f:
                 fragmentCode = f.read()
-            print(f"[INFO] Finished reading fragment code {fragmentPath}")
+            info(2, cstr(f"Finished reading fragment code {fragmentPath}"))
         except:
             raise Exception(f"[ERROR] Failed to read fragment code {fragmentPath}")
 
@@ -112,7 +119,7 @@ class ShaderBuilder:
         return self
     def setAttribute(self, loc: int, dataSize: int):
         GL.glBindVertexArray(self.VAO)
-        # print(f"[INFO] attribute set at [{self.attributeIndex}]")
+        # info(1, cstr(attribute set at [{self.attributeIndex}]")
         GL.glVertexAttribPointer(loc, dataSize, GL.GL_FLOAT, GL.GL_FALSE, self.vertexSize * ctypes.sizeof(ctypes.c_float), ctypes.c_void_p(self.attributeIndex * ctypes.sizeof(ctypes.c_float)))
         GL.glEnableVertexAttribArray(loc)
         self.attributeIndex += dataSize
@@ -128,15 +135,15 @@ class ShaderBuilder:
         if len(model.verticeMeshes.items()) != len(indexes):
             raise Exception(f"model has {len(model.verticeMeshes.items())} VerticeMeshes but got indexes with length {len(indexes)}!")
         items = list(model.verticeMeshes.items())
-        print(f"[INFO] Loading VerticeModel with data length {model.verticeLen}")
+        info(1, cstr(f"Loading VerticeModel with data length {model.verticeLen}"))
         for n in range(len(items)):
             name = items[n][0]
             vertices = items[n][1]
             attribute = indexes[n]
-            print(f"[INFO]   Setting data for VerticeMesh \"{name}\" with attribute indexes {attribute}")
+            info(3, cstr(f"Setting data for VerticeMesh \"{name}\" with attribute indexes {attribute}"))
             self = self.genVBO(name).bindVBO(name).VBOdata(vertices.vertices).setAttribute(attribute[0], attribute[1])
-            print(f"[INFO]    Successfully set data for VerticeMesh \"{name}\"")
-        print("[INFO]  Successfully loaded model")
+            info(3, cstr(f"Successfully set data for VerticeMesh \"{name}\""))
+        info(2, cstr("Successfully loaded model"))
         return self.pack()
 
 def _checkShaderCompile(shader: None):
@@ -149,7 +156,7 @@ def _checkShaderCompile(shader: None):
         else:
             raise Exception("[ERROR] Shader Compilation failed:\nUnknown Error")
     else:
-        print("[INFO] Shader Compiled Successfully")
+        info(1, cstr("Shader Compiled Successfully"))
 
 def _checkProgramLink(program: None):
     success = GL.glGetProgramiv(program, GL.GL_LINK_STATUS)
@@ -161,4 +168,4 @@ def _checkProgramLink(program: None):
         else:
             raise Exception("[ERROR] Program Linking failed:\nUnknown Error")
     else:
-        print("[INFO] Program Linked Successfully")
+        info(1, cstr("Program Linked Successfully"))

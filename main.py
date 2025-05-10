@@ -1,17 +1,15 @@
 import lib
+from lib import cstr
 lib.init()
-
 logger = lib.getlib("logger")
-logger.init(lib.getEnum("logger", "LEVELS")["INFO"])
-
-logger.log(lib.getEnum("logger", "LEVELS")["INFO"], 2, "test".encode('utf-8'))
+logger.init(lib.getEnumV("logger", "LEVELS", "INFO"))
 
 import OpenGL.GL as GL
 import glfw as GLFW
 import threading
 
 from numpy import pi, radians, sin, cos
-from pyglm.glm import lookAt, translate, rotate, scale, ivec2, mat4, vec3, distance, length
+from pyglm.glm import lookAt, translate, rotate, scale, ivec2, mat4, vec3, length
 from resources.scripts.shader import Shader, ShaderBuilder
 from resources.scripts.verticeMesh import VerticeMesh
 from resources.scripts.verticeModel import VerticeModel
@@ -119,12 +117,12 @@ def main():
         updateRate = 1.0
         while True:
             if DELTATIME <= 0:
-                print(f"[FPS] C: inf\tAVERAGE: {averageFps}")
+                logger.info(1, cstr(f"FPS: inf\tAVERAGE: {averageFps}"))
             else:
                 fps = updateRate / DELTATIME
                 averageFps += fps
                 averageFps /= 2
-                print(f"[FPS] C: {fps:.2f}\tAVERAGE: {averageFps:.2f}")
+                logger.info(1, cstr(f"FPS: {fps:.2f}\tAVERAGE: {averageFps:.2f}"))
             sleep(updateRate)  # Print FPS once per second
 
     # Start the thread

@@ -9,7 +9,11 @@
 enum LEVELS { ERROR, WARN, INFO, DEBUG, TRACE };
 
 void init(LEVELS targetLevel);
-void log(LEVELS level, int depth, const char *info);
+void error(int depth, const char *info);
+void warn(int depth, const char *info);
+void info(int depth, const char *info);
+void debug(int depth, const char *info);
+void trace(int depth, const char *info);
 extern std::map<LEVELS, const char *> LEVEL_KEY;
 
 #endif
