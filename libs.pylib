@@ -19,7 +19,7 @@ F.RET POINTER_u8
 F.DEF stbi_image_free
 F.ARG POINTER_u8
 F.RET Null
-
+ENDLIBRARY
 LIBRARY logger
 E.DEF LEVELS
 E.VAL ERROR i32 0
@@ -57,3 +57,4 @@ F.DEF trace
 F.ARG i32
 F.ARG char*
 F.RET Null
+ENDLIBRARY

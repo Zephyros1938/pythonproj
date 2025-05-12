@@ -90,7 +90,7 @@ class _cdll_enum_arg:
 
 class _cdll_enum:
     """A container for C-Style Enums"""
-    def __init__(self, enumName: str, enumValues: Union[dict[str, int], list[str]] = {}):
+    def __init__(self, enumName: str, enumValues: Union[dict[str, Any], list[str]] = {}):
         self.enumName = enumName
         self.enumValues = enumValues
 
@@ -188,6 +188,7 @@ def __load_library(libname: str) -> CDLL:
     except Exception as e:
         raise Exception(f"[LIB ERROR] Failed to load library {libname}: {e}")
 
+libs: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = {}
 with open("./libs.pylib") as file:
     def getCType(s:str) -> Union[type, None]:
         match s:
@@ -202,19 +203,29 @@ with open("./libs.pylib") as file:
             case "Null":
                 return None
         raise Exception(f"Could not find type of value [{s}]!")
+
     class fun:
-        name: str
-        args: list[Any] = []
+        def __init__(self):
+            self.name = '\0'
+            self.values = []
+            self.res = c_int
+            self.finish = False
+        name: str = "\0"
+        values: list[Any] = []
         res: Any
         finish: bool = False
 
-        def __str__(self):
-            return f"name: {self.name}\r\n\targs: {[str(arg) for arg in self.args]}\r\n\tres: {str(self.res)}"
     class en:
+        def __init__(self):
+            self.values = {}
+            self.finish = False
         name: str
         values: dict[str, tuple[type, Any]] = {}
         finish: bool = False
+
     class libr:
+        def __init__(self):
+            self.data = []
         name: str
         data: list[Union[fun, en]] = []
 
@@ -223,6 +234,7 @@ with open("./libs.pylib") as file:
     currentEnum = en()
     line = file.readline()
     lineindex = 0
+    librs: list[libr] = []
     while line:
         line = line.strip()
         if lineindex >= 5:
@@ -230,32 +242,48 @@ with open("./libs.pylib") as file:
                 print(f"Skipping Line {lineindex}")
             if line.startswith("LIBRARY"):
                 currentLibrary.name = line[8:]
-                print("LIB")
+                # print("LIB")
+            if line.startswith("ENDLIBRARY"):
+                if currentLibrary.name.startswith('\0'):
+                    # print("Skipping Library")
+                    pass
+                else:
+                    librs.append(currentLibrary)
+                    currentLibrary = libr()
+                # print("ENDLIBRARY")
             if line.startswith("F."):
                 call = line[2:].strip()
                 if call.startswith("DEF"):
-                    print("DEF", line[6:])
-                    currentDef.name = call
+                    currentDef = fun()
+                    # print("DEF", line[6:])
+                    currentDef.name = call[4:]
                     currentDef.finish = False
                 elif call.startswith("ARG"):
                     if currentDef.finish:
                         raise Exception(f"Def [{call}] Already Finished!")
-                    print("ARG", line[6:])
+                    # print("ARG", line[6:])
                     if line[6:10] == "ENUM":
-                        pass
+                        for t in [v for v in currentLibrary.data if type(v) == en]:
+                            if t.name == line[11:]:
+                                currentDef.values.append(t)
+                                break
+                        else:
+                            raise Exception(f"Could not get enum '{line[11:]}'")
                     else:
-                        currentDef.args.append(getCType(line[6:]))
+                        currentDef.values.append(getCType(line[6:]))
                 elif call.startswith("RET"):
                     if currentDef.finish:
                         raise Exception(f"Def [{call}] Already Finished!")
-                    print("RET")
+                    # print("RET")
                     currentDef.res = getCType(line[6:])
                     currentDef.finish = True
+                    currentLibrary.data.append(currentDef)
             if line.startswith("E."):
                 call = line[2:].strip()
                 if call.startswith("DEF"):
-                    print("DEF", line[6:])
-                    currentEnum.name = call
+                    currentEnum = en()
+                    # print("DEF", line[6:])
+                    currentEnum.name = call[4:]
                     currentEnum.finish = False
                 elif call.startswith("VAL"):
                     if currentEnum.finish:
@@ -264,12 +292,15 @@ with open("./libs.pylib") as file:
                         raise Exception(f"Enum [{call}] Has Invalid Length! (got {len(line[6:].split(' '))})")
                     (valname, valtype, val) = line[6:].split(' ')
                     valtype = getCType(valtype)
+                    if valtype == None:
+                        raise Exception(f"Value of enum enum '{currentEnum.name}' was None!")
                     currentEnum.values[valname] = (valtype, val)
-                    print("VAL", line[6:].split(' '))
+                    # print("VAL", line[6:].split(' '))
                 elif call.startswith("END"):
                     if currentEnum.finish:
                         raise Exception(f"Enum [{call}] Already Finished!")
                     currentEnum.finish = True
+                    currentLibrary.data.append(currentEnum)
         else:
             if lineindex == 0:
                 if line[7:] != "1":
@@ -277,7 +308,15 @@ with open("./libs.pylib") as file:
 
         line = file.readline()
         lineindex += 1
-    print("FIN")
+    # print("FIN")
+
+    for l in librs:
+        libs[l.name] = []
+        for arg in l.data:
+            if isinstance(arg, fun):
+                libs[l.name].append(__cdll_function_def(arg.name, arg.values, arg.res))
+            elif isinstance(arg, en):
+                libs[l.name].append(_cdll_enum(arg.name, arg.values))
 
 # Put libraries here
 libraries: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = {
@@ -352,7 +391,7 @@ def init():
     if __initialized:
         raise Exception("[LIB ERROR] Libraries already initialized, cannot initialize again.")
     print("[LIB INFO] Initializing libraries")
-    for lib, items in libraries.items():
+    for lib, items in libs.items():
         print(f"[LIB INFO]  Loading library {lib}")
         l = __load_library(lib)
         __LibraryStorage._addLibrary(lib, l)
