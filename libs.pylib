@@ -3,11 +3,12 @@ FORMAT 1
 
 
 
+// From Zephyros1938: This filetype was HELL to make lol
 LIBRARY stb_image
 F.DEF stbi_set_flip_vertically_on_load
 F.ARG i32
 F.RET Null
-// test
+
 F.DEF stbi_load
 F.ARG char*
 F.ARG POINTER_i32

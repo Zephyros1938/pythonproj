@@ -1,4 +1,7 @@
-from ctypes import CDLL, POINTER, c_char_p, c_ubyte, c_int
+from ctypes import CDLL, POINTER
+from ctypes import c_byte , c_ubyte , c_short , c_ushort , c_int , c_uint , c_long , c_ulong , c_longlong , c_ulonglong , c_size_t , c_ssize_t , c_time_t
+from ctypes import c_float, c_double, c_longdouble
+from ctypes import c_char_p, c_char
 from dataclasses import dataclass
 from enum import Enum, EnumMeta
 from typing import Any, Union
@@ -21,6 +24,9 @@ cstr = lambda s: s.encode('utf-8')
 #
 # - Zephyros1938
 #
+
+C_INTEGER_TYPES = [c_byte , c_ubyte , c_short , c_ushort , c_int , c_uint , c_long , c_ulong , c_longlong , c_ulonglong , c_size_t , c_ssize_t , c_time_t]
+C_FLOAT_TYPES = [c_float, c_double, c_longdouble]
 
 __LIBRARY_DIR = "./libraries"
 __COMPILED_DIR = os.path.join(__LIBRARY_DIR, "compiled")
@@ -159,6 +165,7 @@ def __set_lib_contents(lib: CDLL, libName: str, funcs: list[Union[__cdll_functio
                     _argtypes.append(__LibraryStorage._getEnum(libName, f_.enumName))
                 else:
                     _argtypes.append(f_)
+            # print(_argtypes)
             func.argtypes = _argtypes
             func.restype = f.restype
         elif isinstance(f, _cdll_enum):
@@ -188,22 +195,69 @@ def __load_library(libname: str) -> CDLL:
     except Exception as e:
         raise Exception(f"[LIB ERROR] Failed to load library {libname}: {e}")
 
+def mapCType(s:str) -> Union[type, None]:
+    match s:
+        case "i32":
+            return c_int
+        case "u32":
+            return c_uint
+        case "i16":
+            return c_short
+        case "u16":
+            return c_ushort
+        case "i64":
+            return c_longlong
+        case "u64":
+            return c_ulonglong
+        case "f32":
+            return c_float
+        case "f64":
+            return c_double
+        case "u8":
+            return c_ubyte
+        case "i8":
+            return c_char
+        case "char*":
+            return c_char_p
+        case "POINTER_i32":
+            return POINTER(c_int)
+        case "POINTER_u32":
+            return POINTER(c_uint)
+        case "POINTER_i16":
+            return POINTER(c_short)
+        case "POINTER_u16":
+            return POINTER(c_ushort)
+        case "POINTER_i64":
+            return POINTER(c_longlong)
+        case "POINTER_u64":
+            return POINTER(c_ulonglong)
+        case "POINTER_f32":
+            return POINTER(c_float)
+        case "POINTER_f64":
+            return POINTER(c_double)
+        case "POINTER_u8":
+            return POINTER(c_ubyte)
+        case "POINTER_i8":
+            return POINTER(c_char)
+        case "POINTER_char*":
+            return POINTER(c_char_p)
+        case "Null":
+            return None
+        case _:
+            raise ValueError(f"Unknown C type mapping for '{s}'")
+
+def castCType(s:str, t:type) -> Union[int, float, bool, str]:
+    match t:
+        case t if t in C_INTEGER_TYPES:
+            return int(s)
+        case t if t in C_FLOAT_TYPES:
+            return float(s)
+        case c_bool:
+            return bool(s)
+    raise Exception(f"Could not convert '{s}' from '{type(s)}' to '{type(t)}!'")
+
 libs: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = {}
 with open("./libs.pylib") as file:
-    def getCType(s:str) -> Union[type, None]:
-        match s:
-            case "i32":
-                return c_int
-            case "POINTER_i32":
-                return POINTER(c_int)
-            case "POINTER_u8":
-                return POINTER(c_ubyte)
-            case "char*":
-                return c_char_p
-            case "Null":
-                return None
-        raise Exception(f"Could not find type of value [{s}]!")
-
     class fun:
         def __init__(self):
             self.name = '\0'
@@ -232,6 +286,7 @@ with open("./libs.pylib") as file:
     currentLibrary = libr()
     currentDef = fun()
     currentEnum = en()
+    currentDef.finish = True
     line = file.readline()
     lineindex = 0
     librs: list[libr] = []
@@ -239,7 +294,7 @@ with open("./libs.pylib") as file:
         line = line.strip()
         if lineindex >= 5:
             if line.startswith("//"):
-                print(f"Skipping Line {lineindex}")
+                print(f"Comment at line.{lineindex}: {line[3:]}")
             if line.startswith("LIBRARY"):
                 currentLibrary.name = line[8:]
                 # print("LIB")
@@ -254,6 +309,8 @@ with open("./libs.pylib") as file:
             if line.startswith("F."):
                 call = line[2:].strip()
                 if call.startswith("DEF"):
+                    if not currentDef.finish:
+                        raise Exception(f"Def {currentDef.name} was not closed!")
                     currentDef = fun()
                     # print("DEF", line[6:])
                     currentDef.name = call[4:]
@@ -270,12 +327,12 @@ with open("./libs.pylib") as file:
                         else:
                             raise Exception(f"Could not get enum '{line[11:]}'")
                     else:
-                        currentDef.values.append(getCType(line[6:]))
+                        currentDef.values.append(mapCType(line[6:]))
                 elif call.startswith("RET"):
                     if currentDef.finish:
                         raise Exception(f"Def [{call}] Already Finished!")
                     # print("RET")
-                    currentDef.res = getCType(line[6:])
+                    currentDef.res = mapCType(line[6:])
                     currentDef.finish = True
                     currentLibrary.data.append(currentDef)
             if line.startswith("E."):
@@ -291,7 +348,7 @@ with open("./libs.pylib") as file:
                     if len(line[6:].split(' ')) != 3:
                         raise Exception(f"Enum [{call}] Has Invalid Length! (got {len(line[6:].split(' '))})")
                     (valname, valtype, val) = line[6:].split(' ')
-                    valtype = getCType(valtype)
+                    valtype = mapCType(valtype)
                     if valtype == None:
                         raise Exception(f"Value of enum enum '{currentEnum.name}' was None!")
                     currentEnum.values[valname] = (valtype, val)
@@ -308,16 +365,20 @@ with open("./libs.pylib") as file:
 
         line = file.readline()
         lineindex += 1
-    # print("FIN")
 
     for l in librs:
         libs[l.name] = []
         for arg in l.data:
             if isinstance(arg, fun):
-                libs[l.name].append(__cdll_function_def(arg.name, arg.values, arg.res))
+                _values = []
+                for a in arg.values:
+                    if isinstance(a, en):
+                        _values.append(_cdll_enum_arg(a.name))
+                    else:
+                        _values.append(a)
+                libs[l.name].append(__cdll_function_def(arg.name, _values, arg.res))
             elif isinstance(arg, en):
-                libs[l.name].append(_cdll_enum(arg.name, arg.values))
-
+                libs[l.name].append(_cdll_enum(arg.name, {nam: castCType(val, typ) for nam, (typ, val) in arg.values.items()}))
 # Put libraries here
 libraries: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = {
     "stb_image":
