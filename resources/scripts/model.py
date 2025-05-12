@@ -56,11 +56,10 @@ class Mesh:
     __EBO: int
 
     def __setupMesh(self):
-        from OpenGL.GL import glGenVertexArrays, glGenBuffers, glBufferData, glBindVertexArray, glBindBuffer, glBufferData, glVertexAttribPointer, glEnableVertexAttribArray
+        from OpenGL.GL import glGenVertexArrays, glGenBuffers, glBindVertexArray, glBindBuffer, glBufferData, glVertexAttribPointer, glEnableVertexAttribArray
         from OpenGL.GL import GL_ARRAY_BUFFER, GL_STATIC_DRAW, GL_ELEMENT_ARRAY_BUFFER
         from OpenGL.GL import GL_FLOAT, GL_FALSE
         from sys import getsizeof as sizeof
-        from numpy import array, float32
 
         glGenVertexArrays(1, self.__VAO)
         glGenBuffers(1, self.__VBO)
@@ -86,6 +85,9 @@ class Mesh:
         glBindVertexArray(0)
 
 from pyassimp.structs import Material as AIMaterial, Texture as AITexture, Mesh as AIMesh, Node as AINode, Scene as AIScene
+from pyassimp.postprocess import aiProcess_FindInvalidData, aiProcessPreset_TargetRealtime_Quality, aiProcess_OptimizeGraph, aiProcess_Debone, aiProcess_ImproveCacheLocality, aiProcessPreset_TargetRealtime_MaxQuality, aiProcess_FindInstances, aiProcess_ValidateDataStructure, aiProcess_JoinIdenticalVertices, aiProcess_FindDegenerates, aiProcess_PreTransformVertices, aiProcess_RemoveRedundantMaterials, aiProcess_MakeLeftHanded, aiProcess_FixTexturePaths, aiProcess_OptimizeMeshes, aiProcess_OptimizeAnimations, aiProcess_FixInfacingNormals, aiProcess_GenEntityMeshes, aiProcess_ConvertToLeftHanded, aiProcess_FlipUVs, aiProcess_RemoveComponent, aiProcess_GenSmoothNormals, aiProcess_TransformUVCoords, aiProcess_SplitLargeMeshes, aiProcessPreset_TargetRealtime_Fast, aiProcess_FlipWindingOrder, aiProcess_CalcTangentSpace, aiProcess_SortByPType, aiProcess_GenUVCoords, aiProcess_GenNormals, aiProcess_Triangulate, aiProcess_EmbedTextures, aiProcess_LimitBoneWeights, aiProcess_SplitByBoneCount
+
+__aiProcessAllowedValues = [a for a in ( __import__("pyassimp.postprocess.").locals())]
 
 @dataclass
 class Model:
@@ -94,9 +96,13 @@ class Model:
     directory: str
     gammaCorrection: bool
 
-    def __init__(self, flags: int):
-
+    def __init__(self, path: str, flags: list[int]):
+        self.__loadModel(path)
 
     def draw(self, shader: Shader):
-        for m in self.meshes:
-            m.draw(shader)
+        [m.draw(shader) for m in self.meshes]
+
+    def __loadModel(self, path: str):
+        from pyassimp import load
+        with load(path) as scene:
+            pass

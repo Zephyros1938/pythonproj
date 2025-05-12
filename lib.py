@@ -1,4 +1,5 @@
 from ctypes import CDLL, POINTER, c_char_p, c_ubyte, c_int
+from dataclasses import dataclass
 from enum import Enum, EnumMeta
 from typing import Any, Union
 import os
@@ -27,6 +28,8 @@ __COMPILED_DIR = os.path.join(__LIBRARY_DIR, "compiled")
 __local_storage: dict[str, Any] = {};
 __initialized = False
 
+# Metaclass fro C-Style enums
+@dataclass(init=False)
 class CEnumMeta(type):
     _enumtype_: Union[EnumMeta, None]
     _values_ : dict[Any, Any]
@@ -47,29 +50,37 @@ class CEnumMeta(type):
         return cls
 
 class __LibraryStorage(dict):
+    """Used to store libraries"""
     __libraries: dict[str, tuple[CDLL, dict[str, type]]] = {}
 
     @classmethod
     def _addLibrary(cls, libName: str, library: CDLL):
+        """Adds a library to the librarystorage"""
         cls.__libraries[libName] = (library, {})
 
     @classmethod
     def _getLibrary(cls, libName) -> CDLL:
+        """Gets a library from the librarystorage"""
         return cls.__libraries[libName][0]
 
     @classmethod
     def _addEnum(cls, libName: str, enumName: str, enum: type):
+        """Adds an enum to the specified library"""
         cls.__libraries[libName][1][enumName] = enum
 
     @classmethod
     def _getEnum(cls, libName: str, enumName: str) -> type :
+        """Gets a enum from the specified library"""
         return cls.__libraries[libName][1][enumName]
 
 def getlib(libName: str) -> CDLL:
+    """Returns the specified library"""
     return __LibraryStorage._getLibrary(libName)
 def getEnum(libName: str, enumName: str):
+    """Returns the specified library's enum"""
     return __LibraryStorage._getEnum(libName, enumName)
 def getEnumV(libName: str, enumName: str, valueName: str):
+    """Returns the specified library's enum value"""
     return getattr(getEnum(libName, enumName), valueName).value
 
 class _cdll_enum_arg:
@@ -78,6 +89,7 @@ class _cdll_enum_arg:
         self.enumName = enumName
 
 class _cdll_enum:
+    """A container for C-Style Enums"""
     def __init__(self, enumName: str, enumValues: Union[dict[str, int], list[str]] = {}):
         self.enumName = enumName
         self.enumValues = enumValues
@@ -100,6 +112,10 @@ def __dict_enum_to_c_enum(enum_name: str, enum_values: dict[str, int]):
     enum_type = Enum(enum_name + "Enum", enum_values)
 
     class CEnumWrapper(metaclass=CEnumMeta):
+        """A C-Style enum wrapper
+
+        This is used because C-Style enums when used with CDLL must be formatted as classes
+        """
         def __init__(self, value: int | str):
             if isinstance(value, str):
                 self.value = type(enum_type)[value].value
@@ -131,7 +147,8 @@ def __dict_enum_to_c_enum(enum_name: str, enum_values: dict[str, int]):
     return CEnumWrapper
 
 
-def __set_lib_funcs(lib: CDLL, libName: str, funcs: list[Union[__cdll_function_def, _cdll_enum]]):
+def __set_lib_contents(lib: CDLL, libName: str, funcs: list[Union[__cdll_function_def, _cdll_enum]]):
+    """Sets all of the library's contents"""
     for f in funcs:
         if isinstance(f, __cdll_function_def):
             print(f"[LIB INFO]   Setting function {libName}::{f.fname}")
@@ -156,9 +173,10 @@ def __set_lib_funcs(lib: CDLL, libName: str, funcs: list[Union[__cdll_function_d
             __LibraryStorage._addEnum(libName, f.enumName, enumClass)
 
 def __load_library(libname: str) -> CDLL:
-    if os.name == "posix":
+    """Loads the specified library"""
+    if os.name == "posix": # Linux/Mac
         lib_path = os.path.abspath(os.path.join(__COMPILED_DIR, libname, f"{libname}.so"))
-    elif os.name == "nt":
+    elif os.name == "nt": # Windows
         lib_path = os.path.abspath(os.path.join(__COMPILED_DIR, libname, f"{libname}.dll"))
     else:
         raise OSError("[LIB ERROR] Unsupported operating system: " + os.name)
@@ -170,6 +188,98 @@ def __load_library(libname: str) -> CDLL:
     except Exception as e:
         raise Exception(f"[LIB ERROR] Failed to load library {libname}: {e}")
 
+with open("./libs.pylib") as file:
+    def getCType(s:str) -> Union[type, None]:
+        match s:
+            case "i32":
+                return c_int
+            case "POINTER_i32":
+                return POINTER(c_int)
+            case "POINTER_u8":
+                return POINTER(c_ubyte)
+            case "char*":
+                return c_char_p
+            case "Null":
+                return None
+        raise Exception(f"Could not find type of value [{s}]!")
+    class fun:
+        name: str
+        args: list[Any] = []
+        res: Any
+        finish: bool = False
+
+        def __str__(self):
+            return f"name: {self.name}\r\n\targs: {[str(arg) for arg in self.args]}\r\n\tres: {str(self.res)}"
+    class en:
+        name: str
+        values: dict[str, tuple[type, Any]] = {}
+        finish: bool = False
+    class libr:
+        name: str
+        data: list[Union[fun, en]] = []
+
+    currentLibrary = libr()
+    currentDef = fun()
+    currentEnum = en()
+    line = file.readline()
+    lineindex = 0
+    while line:
+        line = line.strip()
+        if lineindex >= 5:
+            if line.startswith("//"):
+                print(f"Skipping Line {lineindex}")
+            if line.startswith("LIBRARY"):
+                currentLibrary.name = line[8:]
+                print("LIB")
+            if line.startswith("F."):
+                call = line[2:].strip()
+                if call.startswith("DEF"):
+                    print("DEF", line[6:])
+                    currentDef.name = call
+                    currentDef.finish = False
+                elif call.startswith("ARG"):
+                    if currentDef.finish:
+                        raise Exception(f"Def [{call}] Already Finished!")
+                    print("ARG", line[6:])
+                    if line[6:10] == "ENUM":
+                        pass
+                    else:
+                        currentDef.args.append(getCType(line[6:]))
+                elif call.startswith("RET"):
+                    if currentDef.finish:
+                        raise Exception(f"Def [{call}] Already Finished!")
+                    print("RET")
+                    currentDef.res = getCType(line[6:])
+                    currentDef.finish = True
+            if line.startswith("E."):
+                call = line[2:].strip()
+                if call.startswith("DEF"):
+                    print("DEF", line[6:])
+                    currentEnum.name = call
+                    currentEnum.finish = False
+                elif call.startswith("VAL"):
+                    if currentEnum.finish:
+                        raise Exception(f"Enum [{call}] Already Finished!")
+                    if len(line[6:].split(' ')) != 3:
+                        raise Exception(f"Enum [{call}] Has Invalid Length! (got {len(line[6:].split(' '))})")
+                    (valname, valtype, val) = line[6:].split(' ')
+                    valtype = getCType(valtype)
+                    currentEnum.values[valname] = (valtype, val)
+                    print("VAL", line[6:].split(' '))
+                elif call.startswith("END"):
+                    if currentEnum.finish:
+                        raise Exception(f"Enum [{call}] Already Finished!")
+                    currentEnum.finish = True
+        else:
+            if lineindex == 0:
+                if line[7:] != "1":
+                    raise Exception(f"Invalid pylib format! (got {line[7:]})")
+
+        line = file.readline()
+        lineindex += 1
+    print("FIN")
+
+# Put libraries here
 libraries: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = {
     "stb_image":
         [
@@ -236,9 +346,8 @@ libraries: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = {
     ]
 }
 
-
-
 def init():
+    """Initializes the library loader; call this before any other imports."""
     global __initialized
     if __initialized:
         raise Exception("[LIB ERROR] Libraries already initialized, cannot initialize again.")
@@ -247,5 +356,5 @@ def init():
         print(f"[LIB INFO]  Loading library {lib}")
         l = __load_library(lib)
         __LibraryStorage._addLibrary(lib, l)
-        __set_lib_funcs(l, lib, items)
+        __set_lib_contents(l, lib, items)
     __initialized = True

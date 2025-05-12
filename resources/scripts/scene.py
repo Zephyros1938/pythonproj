@@ -12,3 +12,4 @@ class Transform:
 @dataclass
 class Entity(Transform):
     def __init__(self, path: str, gamma: bool = False):
+        pass

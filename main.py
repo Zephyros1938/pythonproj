@@ -225,7 +225,6 @@ def cursor_pos_callback(window: GLFW._GLFWwindow, x:int, y:int):
 def scroll_callback(window: GLFW._GLFWwindow, _, yoffset: float):
     CAMERA.process_scroll(yoffset)
 
-
 def framebuffer_resize_callback(window: GLFW._GLFWwindow, width: int, height: int):
     GL.glViewport(0, 0, width, height)
     CAMERA.set_aspect_ratio(width / height)

@@ -84,7 +84,7 @@ class Texture:
 
             size = width.value * height.value * nrChannels.value
 
-            info(2, cstr(f"Image size: {width.value}x{height.value}, Channels: {nrChannels.value}, Total size: {size}"))
+            info(3, cstr(f"Image size: {width.value}x{height.value}, Channels: {nrChannels.value}, Total size: {size}"))
 
             glTexImage2D(
                 GL_TEXTURE_2D,

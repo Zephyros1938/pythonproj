@@ -1,8 +1,6 @@
-#include <cstddef>
 #define STB_IMAGE_IMPLEMENTATION
-#include "headers/ext/stb_image.h"
+#include <stb/stb_image.h>
 
-#include <cstdint> // for uint16_t
 #include <iostream>
 
 using namespace std;
