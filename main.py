@@ -73,10 +73,11 @@ colors = VerticeMesh([0.0 if i % 9 in [1, 2, 3, 5, 6, 7] else 1.0 for i in range
 
 verticeModel = VerticeModel({"vertices": vertices, "colors": colors})
 
-window = Window( viewport=(VIEWPORT.x, VIEWPORT.y))
-
 def main():
     global FIRSTMOUSE, model
+
+    window = Window( viewport=(VIEWPORT.x, VIEWPORT.y))
+
     GL.glEnable(GL.GL_DEPTH_TEST)
     GL.glEnable(GL.GL_CULL_FACE)
 
@@ -115,14 +116,12 @@ def main():
         averageFps = 0
         updateRate = 1.0
         while True:
-            if DELTATIME <= 0:
-                logger.info(1, cstr(f"FPS: inf\tAVERAGE: {averageFps}"))
-            else:
+            if not DELTATIME <= 0:
                 fps = updateRate / DELTATIME
                 averageFps += fps
                 averageFps /= 2
-                logger.info(1, cstr(f"FPS: {fps:.2f}\tAVERAGE: {averageFps:.2f}"))
-            sleep(updateRate)  # Print FPS once per second
+                # logger.info(1, cstr(f"FPS: {fps:.2f}\tAVERAGE: {averageFps:.2f}"))
+            sleep(updateRate)
 
     # Start the thread
     fps_notify_thread = threading.Thread(target=fps_notify, daemon=True)
