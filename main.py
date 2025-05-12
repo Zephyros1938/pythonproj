@@ -8,8 +8,7 @@ import OpenGL.GL as GL
 import glfw as GLFW
 import threading
 
-from numpy import pi, radians, sin, cos
-from pyglm.glm import lookAt, translate, rotate, scale, ivec2, mat4, vec3, length
+from pyglm.glm import translate, rotate, scale, ivec2, mat4, vec3, length, sin,cos
 from resources.scripts.shader import Shader, ShaderBuilder
 from resources.scripts.verticeMesh import VerticeMesh
 from resources.scripts.verticeModel import VerticeModel
