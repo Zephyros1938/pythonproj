@@ -38,7 +38,7 @@ class CEnumMeta(type):
         enum_base = next((b for b in bases if isinstance(b, EnumMeta)), None)
         if enum_base:
             cls._enumtype_ = enum_base
-            cls._values_ = {e._name_: e._value_ for e in enum_base}
+            cls._values_ = {getattr(e, "_name_"): getattr(e, "_value_") for e in enum_base}
             cls._name_ = name
         else:
             cls._enumtype_ = None

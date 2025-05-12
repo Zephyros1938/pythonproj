@@ -20,7 +20,7 @@ class Shader:
             info(2, cstr(f"Reading vertex code: {vertexPath}"))
             with open(vertexPath, "r") as f:
                 vertexCode = f.read()
-            info(2, cstr(f"Finished reading vertex code {vertexPath}"))
+            info(3, cstr(f"Finished reading vertex code {vertexPath}"))
         except:
             raise Exception(f"[ERROR] Failed to read vertex code {vertexPath}")
 
@@ -29,7 +29,7 @@ class Shader:
             info(2, cstr(f"Reading fragment code: {fragmentPath}"))
             with open(fragmentPath, "r") as f:
                 fragmentCode = f.read()
-            info(2, cstr(f"Finished reading fragment code {fragmentPath}"))
+            info(3, cstr(f"Finished reading fragment code {fragmentPath}"))
         except:
             raise Exception(f"[ERROR] Failed to read fragment code {fragmentPath}")
 
@@ -58,6 +58,7 @@ class Shader:
 
         self.ID = ID
         self.DRAWMODE = drawmode
+        info(2, cstr("Successfully created shader"))
 
     def activate(self):
         GL.glUseProgram(self.ID)
@@ -140,7 +141,7 @@ class ShaderBuilder:
             name = items[n][0]
             vertices = items[n][1]
             attribute = indexes[n]
-            info(3, cstr(f"Setting data for VerticeMesh \"{name}\" with attribute indexes {attribute}"))
+            info(2, cstr(f"Setting data for VerticeMesh \"{name}\" with attribute indexes {attribute}"))
             self = self.genVBO(name).bindVBO(name).VBOdata(vertices.vertices).setAttribute(attribute[0], attribute[1])
             info(3, cstr(f"Successfully set data for VerticeMesh \"{name}\""))
         info(2, cstr("Successfully loaded model"))
@@ -155,8 +156,8 @@ def _checkShaderCompile(shader: None):
             raise Exception(f"[ERROR] Shader Compilation failed:\n{info_log.decode('utf-8')}")
         else:
             raise Exception("[ERROR] Shader Compilation failed:\nUnknown Error")
-    else:
-        info(1, cstr("Shader Compiled Successfully"))
+    # else:
+        # info(1, cstr("Shader Compiled Successfully"))
 
 def _checkProgramLink(program: None):
     success = GL.glGetProgramiv(program, GL.GL_LINK_STATUS)
@@ -167,5 +168,5 @@ def _checkProgramLink(program: None):
             raise Exception(f"[ERROR] Program Linking failed:\n{info_log.decode('utf-8')}")
         else:
             raise Exception("[ERROR] Program Linking failed:\nUnknown Error")
-    else:
-        info(1, cstr("Program Linked Successfully"))
+    # else:
+        # info(1, cstr("Program Linked Successfully"))

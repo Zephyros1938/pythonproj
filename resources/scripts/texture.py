@@ -7,7 +7,10 @@ from OpenGL.GL import GL_RED, GL_RG, GL_RGB, GL_RGBA, GL_UNSIGNED_BYTE, GLuint
 from ctypes import pointer, c_int, byref, c_void_p, cast as c_cast
 import os
 
-from lib import getlib as getlib
+from lib import getlib, cstr
+logger = getlib("logger")
+info = logger.info
+error = logger.error
 
 stb_image = getlib("stb_image")
 
@@ -65,23 +68,23 @@ class Texture:
                 byref(height),
                 byref(nrChannels), 0)
 
-            print("[INFO] Loaded image")
+            info(1, cstr("Loaded image"))
 
             if not data:
                 raise ValueError("Data for image was Null!")
 
-            print("[INFO]  Got image data")
+            info(2, cstr("Got image data"))
 
             try:
                 format = {1 : GL_RED, 2: GL_RG, 3: GL_RGB, 4: GL_RGBA}[nrChannels.value]
             except:
                 raise ValueError(f"Channels for texture was {nrChannels.value}, expected 1, 2, 3, or 4!")
 
-            print("[INFO]  Got image format")
+            info(2, cstr("Got image format"))
 
             size = width.value * height.value * nrChannels.value
 
-            print(f"[INFO]  Image size: {width.value}x{height.value}, Channels: {nrChannels.value}, Total size: {size}")
+            info(2, cstr(f"Image size: {width.value}x{height.value}, Channels: {nrChannels.value}, Total size: {size}"))
 
             glTexImage2D(
                 GL_TEXTURE_2D,
@@ -94,9 +97,9 @@ class Texture:
                 GL_UNSIGNED_BYTE,
                 c_cast(data, c_void_p)
             )
-            print("[INFO]  Loaded image TexImage2D")
+            info(2, cstr("Loaded image TexImage2D"))
             glGenerateMipmap(GL_TEXTURE_2D)
-            print("[INFO]  Generated Mipmap")
+            info(2, cstr("Generated Mipmap"))
 
             stb_image.stbi_image_free(data)
             self.id = texture_id.value
