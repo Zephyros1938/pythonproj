@@ -1,5 +1,3 @@
-from asyncio.subprocess import Process
-
 from dataclasses import dataclass
 from pyglm.glm import vec2, vec3, value_ptr
 from OpenGL.GL import glActiveTexture, glBindTexture, glBindVertexArray, glDrawElements
@@ -87,7 +85,7 @@ class Mesh:
 
         glBindVertexArray(0)
 
-from pyassimp.
+from pyassimp.structs import Material as AIMaterial, Texture as AITexture, Mesh as AIMesh, Node as AINode, Scene as AIScene
 
 @dataclass
 class Model:
