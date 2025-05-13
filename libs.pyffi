@@ -124,7 +124,6 @@ E.VAL aiProcess_DropNormals i32 0x40000000
 E.VAL aiProcess_GenBoundingBoxes i32 0x80000000
 E.END
 
-
 F.DEF aiImportFileEx
 F.ARG char*
 F.ARG i32
@@ -314,19 +313,6 @@ C.END
 
 F.DEF test
 F.ARG i32
-F.RET Null
-
-F.DEF TestClass_New
-F.ARG i32
-F.RET POINTER_void
-
-F.DEF TestClass_doSomething
-F.ARG POINTER_void
-F.ARG i32
-F.RET Null
-
-F.DEF TestClass_delete
-F.ARG POINTER_void
 F.RET Null
 
 ENDLIBRARY

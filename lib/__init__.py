@@ -140,9 +140,11 @@ def __set_lib_contents(libName: str, funcs: list[Union[__cdll_function_def, _cdl
 
             funcRet = mapCType(f.restype)
             funcArgs = ""
+            argIndex = 0
             for arg in _argtypes:
-                funcArgs += mapCType(arg)
+                funcArgs += f"{mapCType(arg)} arg{argIndex}"
                 funcArgs += ", "
+                argIndex+=1
             funcArgs = funcArgs[:-2]
 
             func = f"{funcRet} {f.name}({funcArgs});"
