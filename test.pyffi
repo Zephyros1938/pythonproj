@@ -1,0 +1,33 @@
+FORMAT 1
+
+
+
+
+LIBRARY test
+
+C.DEF TestClass
+C.CTOR i32
+C.METHOD doSomething
+C.ARG i32
+C.RET Null
+C.END
+
+F.DEF test
+F.ARG i32
+F.ARG i32
+F.RET Null
+
+F.DEF TestClass_New
+F.ARG i32
+F.RET POINTER_void
+
+F.DEF TestClass_doSomething
+F.ARG POINTER_void
+F.ARG i32
+F.RET Null
+
+F.DEF TestClass_delete
+F.ARG POINTER_void
+F.RET Null
+
+ENDLIBRARY

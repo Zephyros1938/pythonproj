@@ -4,3 +4,4 @@ pyopengl
 pyglm
 pyassimp
 logger
+cffi

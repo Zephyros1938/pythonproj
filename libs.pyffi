@@ -125,23 +125,11 @@ E.VAL aiProcess_GenBoundingBoxes i32 0x80000000
 E.END
 
 
-F.DEF aiImportFile
-F.ARG char*
-F.ARG i32
-F.RET POINTER_void
-
 F.DEF aiImportFileEx
 F.ARG char*
 F.ARG i32
 F.ARG POINTER_void
 F.RET POINTER_void
-
-F.DEF aiReleaseImport
-F.ARG POINTER_void
-F.RET Null
-
-F.DEF aiGetErrorString
-F.RET char*
 
 F.DEF aiGetMaterialFloatArray
 F.ARG POINTER_void

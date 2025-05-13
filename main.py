@@ -1,6 +1,6 @@
 import lib
 from lib import cstr
-lib.init()
+lib.init(debug=False, debugLibInternals=True)
 logger = lib.getlib("logger")
 logger.init(lib.getEnumV("logger", "LEVELS", "INFO"))
 assimp = lib.getlib("assimp")

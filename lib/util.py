@@ -4,6 +4,7 @@ from ctypes import c_char_p, c_char
 from ctypes import POINTER
 from ctypes import c_bool
 from typing import Union
+from .types import _cdll_enum_arg
 
 C_INTEGER_TYPES = [c_byte , c_ubyte , c_short , c_ushort , c_int , c_uint , c_long , c_ulong , c_longlong , c_ulonglong , c_size_t , c_ssize_t , c_time_t]
 C_FLOAT_TYPES = [c_float, c_double, c_longdouble]
@@ -60,6 +61,79 @@ def mapStrCType(s:str) -> Union[type, None]:
             return None
         case _:
             raise ValueError(f"Unknown C type mapping for '{s}'")
+
+def mapCType(t:Union[type, None]) -> str:
+    # print(t)
+    match t:
+        # ints
+        case t if t in [c_char, c_byte]:
+            return "char"
+        case t if t == c_ubyte:
+            return "unsigned char"
+        case t if t == c_short:
+            return "short"
+        case t if t == c_ushort:
+            return "unsigned short"
+        case t if t == c_int:
+            return "int"
+        case t if t == c_uint:
+            return "unsigned int"
+        case t if t == c_long:
+            return "long"
+        case t if t == c_ulong:
+            return "unsigned long"
+        case t if t == c_longlong:
+            return "long long"
+        case t if t == c_ulonglong:
+            return "unsigned long long"
+        # booleans
+        case t if t == c_bool:
+            return "bool"
+        # pointers (int)
+
+        case t if t in [POINTER(c_char), POINTER(c_byte)]:
+            return "char*"
+        case t if t == POINTER(c_char_p):
+            return "char**"
+        case t if t == POINTER(c_ubyte):
+            return "unsigned char*"
+        case t if t == POINTER(c_short):
+            return "short*"
+        case t if t == POINTER(c_ushort):
+            return "unsigned short*"
+        case t if t == POINTER(c_int):
+            return "int*"
+        case t if t == POINTER(c_uint):
+            return "unsigned int*"
+        case t if t == POINTER(c_long):
+            return "long*"
+        case t if t == POINTER(c_ulong):
+            return "unsigned long*"
+        case t if t == POINTER(c_longlong):
+            return "long long*"
+        case t if t == POINTER(c_ulonglong):
+            return "unsigned long long*"
+        # pointers (other)
+        case t if t == c_void_p:
+            return "void*"
+        case t if t == c_char_p:
+            return "char*"
+
+        # float
+        case t if t == c_float:
+            return "float"
+        case t if t == POINTER(c_float):
+            return "float*"
+
+        # other
+        case t if t == None:
+            return "void"
+        case t if isinstance(t, _cdll_enum_arg):
+            # print("Cast", t)
+            return t.enumName
+        # no match
+        case _:
+            raise ValueError(f"Unkown C type mapping for '{t}'")
 
 def castCType(s:str, t:type) -> Union[int, float, bool, str, None]:
     match t:

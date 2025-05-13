@@ -4,10 +4,10 @@ from OpenGL.GL import GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER, GL_LINEAR, G
 from OpenGL.GL import glGenTextures, glBindTexture, glTexParameteri, glTexImage2D, glGenerateMipmap
 from OpenGL.GL import GL_RED, GL_RG, GL_RGB, GL_RGBA, GL_UNSIGNED_BYTE, GLuint
 
-from ctypes import pointer, c_int, byref, c_void_p, cast as c_cast
+from ctypes import pointer, c_void_p, cast as c_cast
 import os
 
-from lib import getlib, cstr
+from lib import getlib, cstr, ffi
 logger = getlib("logger")
 info = logger.info
 error = logger.error
@@ -56,46 +56,60 @@ class Texture:
         )
 
         try:
-            width = c_int()
-            height = c_int()
-            nrChannels = c_int()
+            width_ptr = ffi.new("int*", 0)
+            height_ptr = ffi.new("int*", 0)
+            nrChannels_ptr = ffi.new("int*", 0)
 
             stb_image.stbi_set_flip_vertically_on_load(1 if flip else 0)
 
             data = stb_image.stbi_load(
                 os.path.abspath(path).encode("utf-8"),
-                byref(width),
-                byref(height),
-                byref(nrChannels), 0)
+                width_ptr,
+                height_ptr,
+                nrChannels_ptr,
+                0
+            )
+
+            width = width_ptr[0]
+            height = height_ptr[0]
+            nrChannels = nrChannels_ptr[0]
 
             info(1, cstr("Loaded image"))
-
             if not data:
                 raise ValueError("Data for image was Null!")
 
             info(2, cstr("Got image data"))
 
             try:
-                format = {1 : GL_RED, 2: GL_RG, 3: GL_RGB, 4: GL_RGBA}[nrChannels.value]
+                format = {1 : GL_RED, 2: GL_RG, 3: GL_RGB, 4: GL_RGBA}[nrChannels]
             except:
-                raise ValueError(f"Channels for texture was {nrChannels.value}, expected 1, 2, 3, or 4!")
+                raise ValueError(f"Channels for texture was {nrChannels}, expected 1, 2, 3, or 4!")
 
             info(2, cstr("Got image format"))
 
-            size = width.value * height.value * nrChannels.value
+            size = width * height * nrChannels
 
-            info(3, cstr(f"Image size: {width.value}x{height.value}, Channels: {nrChannels.value}, Total size: {size}"))
+            info(3, cstr(f"Image size: {width}x{height}, Channels: {nrChannels}, Total size: {size}"))
+
+            dat = []
+            datIndex = 0
+            while True:
+                try:
+                    dat[datIndex] = data[datIndex]
+                    datIndex += 1
+                except:
+                    break
 
             glTexImage2D(
                 GL_TEXTURE_2D,
                 0,
                 format,
-                width.value,
-                height.value,
+                width,
+                height,
                 0,
                 format,
                 GL_UNSIGNED_BYTE,
-                c_cast(data, c_void_p)
+                dat
             )
             info(2, cstr("Loaded image TexImage2D"))
             glGenerateMipmap(GL_TEXTURE_2D)
