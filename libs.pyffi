@@ -1,15 +1,25 @@
 FORMAT 1
-// LIBRARY [libraryname] to begin library
-// ENDLIBRARY to end library
-// F.DEF [funcname] to declare function
-// F.ARG [argtype] to declare above function's argument (positional)
-// F.ARG ENUM [enumname] to declare enum arg
-// F.RET [returntype] to declare function return value
-// E.DEF [enumname] to declare enum name
-// E.VAL [valuename] [valuetype] [value] to declare enum value
-// E.END to end enum
-//
 // PyFFI File Format Format 1
+//
+// LIBRARY [libraryname] — begin library
+// ENDLIBRARY — end library
+//
+// F.DEF [funcname] — declare function
+// F.ARG [argtype] — declare above function's argument (positional)
+// F.ARG ENUM [enumname] — declare enum arg
+// F.RET [returntype] — declare function return value
+//
+// E.DEF [enumname] — declare enum name
+// E.VAL [valuename] [valuetype] [value] — declare enum value
+// E.END — end enum
+//
+// C.DEF [ClassName] — begin class
+// C.CTOR [argtypes] — constructor
+// C.METHOD [funcname] — method name
+// C.ARG [argtype] — method argument
+// C.RET [returntype] — return type
+// C.DTOR — optional destructor
+// C.END — end class definition
 
 LIBRARY stb_image
 F.DEF stbi_set_flip_vertically_on_load
@@ -303,5 +313,32 @@ F.RET i32
 
 F.DEF aiGetCompileFlags
 F.RET i32
+
+ENDLIBRARY
+LIBRARY test
+
+C.DEF TestClass
+C.CTOR i32
+C.METHOD doSomething
+C.ARG i32
+C.RET Null
+C.END
+
+F.DEF test
+F.ARG i32
+F.RET Null
+
+F.DEF TestClass_New
+F.ARG i32
+F.RET POINTER_void
+
+F.DEF TestClass_doSomething
+F.ARG POINTER_void
+F.ARG i32
+F.RET Null
+
+F.DEF TestClass_delete
+F.ARG POINTER_void
+F.RET Null
 
 ENDLIBRARY

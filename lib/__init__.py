@@ -1,5 +1,7 @@
 from ctypes import CDLL
 from ctypes import c_int
+from cffi import FFI
+ffi = FFI()
 from enum import Enum
 from typing import Union
 import os
@@ -23,6 +25,8 @@ cstr = lambda s: s.encode('utf-8')
 #
 # - Zephyros1938
 #
+# TODO: switch this to cffi
+
 
 __LIBRARY_DIR = "./libraries"
 __COMPILED_DIR = os.path.join(__LIBRARY_DIR, "compiled")
@@ -119,8 +123,8 @@ def __set_lib_contents(lib: CDLL, libName: str, funcs: list[Union[__cdll_functio
     """Sets all of the library's contents"""
     for f in funcs:
         if isinstance(f, __cdll_function_def):
-            print(f"[LIB INFO]   Setting function {libName}::{f.fname}")
-            func = getattr(lib, f.fname)
+            print(f"[LIB INFO]   Setting function {libName}::{f.name}")
+            func = getattr(lib, f.name)
             _argtypes = []
             for f_ in f.argtypes:
                 if type(f_) == _cdll_enum_arg:
@@ -132,7 +136,7 @@ def __set_lib_contents(lib: CDLL, libName: str, funcs: list[Union[__cdll_functio
             # for i, at in enumerate(_argtypes):
             #     print(f"  Arg {i}: {at} (has from_param? {'from_param' in dir(at)})")
             if any(a is None for a in _argtypes):
-                raise TypeError(f"[LIB ERROR] Function {f.fname} has None in argtypes: {_argtypes}")
+                raise TypeError(f"[LIB ERROR] Function {f.name} has None in argtypes: {_argtypes}")
 
             func.argtypes = _argtypes
             func.restype = f.restype

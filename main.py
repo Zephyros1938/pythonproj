@@ -6,7 +6,6 @@ logger.init(lib.getEnumV("logger", "LEVELS", "INFO"))
 assimp = lib.getlib("assimp")
 print(assimp.aiGetErrorString())
 print(lib.getEnum("assimp", "aiPostProcessSteps").aiProcess_CalcTangentSpace.value)
-assimp.importer
 
 import OpenGL.GL as GL
 import glfw as GLFW

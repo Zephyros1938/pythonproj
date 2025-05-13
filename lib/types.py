@@ -24,6 +24,8 @@ class CEnumMeta(type):
             cls._name_ = name
         return cls
 
+# Enum
+
 class _cdll_enum_arg:
     """Used when using an enum in a __cdll_function_def"""
     def __init__ (self, enumName: str):
@@ -35,11 +37,13 @@ class _cdll_enum:
         self.enumName = enumName
         self.enumValues = enumValues
 
+# Function
+
 class __cdll_function_def:
     """Used to define functions for CDLL\nThis should be placed after any _cdll_enum definitions if they are used in argtypes"""
     def __init__(self, fname: str, argtypes: list[Union[Any, _cdll_enum_arg]], localstorage: dict[str, Any], restype: Any = None):
-        self.fname = fname
-        _argtypes = []
+        self.name = fname
+        _argtypes: list[Any] = []
         for a in argtypes:
             if isinstance(a, _cdll_enum):
                 _argtypes.append(localstorage[a.enumName])
@@ -47,3 +51,28 @@ class __cdll_function_def:
                 _argtypes.append(a)
         self.argtypes = _argtypes
         self.restype = restype
+
+# Class
+
+class _cdll_class_method:
+    name: str
+    argtypes: list[Any] = []
+    restype: Any = None
+    def __init__(self, name: str, args: list[Any], restype: Any):
+        self.name = name
+        self.argtypes = args
+        self.restype = restype
+
+class _cdll_class_constructor:
+    args: list[Any] = []
+    def __init__(self, args: list[Any]):
+        self.args = args
+
+class __cdll_class:
+    name: str
+    methods: list[_cdll_class_method]
+    constructor: _cdll_class_constructor
+    def __init__(self, name: str, methods: list[_cdll_class_method], constructor: _cdll_class_constructor):
+        self.name = name
+        self.methods = methods
+        self.constructor = constructor

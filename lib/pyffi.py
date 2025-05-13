@@ -1,4 +1,4 @@
-from .util import mapCType, castCType
+from .util import mapStrCType, castCType
 from .types import _cdll_enum, _cdll_enum_arg, __cdll_function_def
 from .__storage import enum_storage
 from typing import Any, Union
@@ -44,6 +44,7 @@ def loadPyFFI(path: str, debug: bool = False) -> dict[str, list[Union[__cdll_fun
     lineindex = 0
     librs: list[libr] = []
     print("[ PYFFI INFO ]  Begin Build")
+    (libstarts, libends, funcstarts, funcends, enumstarts, enumends) = (0,0,0,0,0,0)
 
     line = file.readline()
     if line.strip()[7:] != "1":
@@ -58,6 +59,7 @@ def loadPyFFI(path: str, debug: bool = False) -> dict[str, list[Union[__cdll_fun
         elif line.startswith("LIBRARY"):
             currentLibrary.name = line[8:]
             print(f"[ PYFFI GEN  ]   Begin Library {currentLibrary.name}")
+            libstarts+=1
         elif line.startswith("ENDLIBRARY"):
             if currentLibrary.name.startswith('\0'):
                 pass
@@ -66,6 +68,7 @@ def loadPyFFI(path: str, debug: bool = False) -> dict[str, list[Union[__cdll_fun
                 name = currentLibrary.name
                 currentLibrary = libr()
                 print(f"[ PYFFI GEN  ]   End Library {name}")
+                libends+=1
         elif line.startswith("F."):
             call = line[2:].strip()
             if call.startswith("DEF"):
@@ -75,6 +78,7 @@ def loadPyFFI(path: str, debug: bool = False) -> dict[str, list[Union[__cdll_fun
                 currentDef.name = call[4:]
                 currentDef.finish = False
                 print(f"[ PYFFI GEN  ]    Begin Function {currentDef.name}")
+                funcstarts+=1
             elif call.startswith("ARG"):
                 if currentDef.finish:
                     raise Exception(f"Def [{call}] Already Finished!")
@@ -87,15 +91,16 @@ def loadPyFFI(path: str, debug: bool = False) -> dict[str, list[Union[__cdll_fun
                     else:
                         raise Exception(f"Could not get enum '{line[11:]}'")
                 else:
-                    currentDef.values.append(mapCType(line[6:]))
+                    currentDef.values.append(mapStrCType(line[6:]))
                     print(f"[ PYFFI GEN  ]     TYPE ARG: {line[6:]}")
             elif call.startswith("RET"):
                 if currentDef.finish:
                     raise Exception(f"Def [{call}] Already Finished!")
-                currentDef.res = mapCType(line[6:])
+                currentDef.res = mapStrCType(line[6:])
                 currentDef.finish = True
                 currentLibrary.data.append(currentDef)
                 print(f"[ PYFFI GEN  ]     RETURN  : {line[6:]}")
+                funcends+=1
         elif line.startswith("E."):
             call = line[2:].strip()
             if call.startswith("DEF"):
@@ -103,13 +108,14 @@ def loadPyFFI(path: str, debug: bool = False) -> dict[str, list[Union[__cdll_fun
                 currentEnum.name = call[4:]
                 currentEnum.finish = False
                 print(f"[ PYFFI GEN  ]    Begin Enum {currentEnum.name}")
+                enumstarts+=1
             elif call.startswith("VAL"):
                 if currentEnum.finish:
                     raise Exception(f"Enum [{call}] Already Finished!")
                 if len(line[6:].split(' ')) != 3:
                     raise Exception(f"Enum [{call}] Has Invalid Length! (got {len(line[6:].split(' '))})")
                 (valname, valtype, val) = line[6:].split(' ')
-                valtype = mapCType(valtype)
+                valtype = mapStrCType(valtype)
                 if valtype == None:
                     raise Exception(f"Value of enum enum '{currentEnum.name}' was None!")
                 currentEnum.values[valname] = (valtype, val)
@@ -120,8 +126,16 @@ def loadPyFFI(path: str, debug: bool = False) -> dict[str, list[Union[__cdll_fun
                 currentEnum.finish = True
                 currentLibrary.data.append(currentEnum)
                 print("[ PYFFI GEN  ]     ENUM END")
+                enumends+=1
         line = file.readline()
         lineindex += 1
+
+    if libstarts != libends:
+        raise Exception(f"Libstarts {'>' if libstarts > libends else '<'} libends. starts: {libstarts} ends: {libends}")
+    elif funcstarts != funcends:
+        raise Exception(f"Funcstarts {'>' if funcstarts > funcends else '<'} funcends. starts: {funcstarts} ends: {funcends}")
+    elif enumstarts != enumends:
+        raise Exception(f"Enumstarts {'>' if enumstarts > enumends else '<'} enumends. starts: {enumstarts} ends: {enumends}")
 
     libs: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = {}
 

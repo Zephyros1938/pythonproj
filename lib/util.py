@@ -2,13 +2,13 @@ from ctypes import c_byte , c_ubyte , c_short , c_ushort , c_int , c_uint , c_lo
 from ctypes import c_float, c_double, c_longdouble
 from ctypes import c_char_p, c_char
 from ctypes import POINTER
-from typing import Union
 from ctypes import c_bool
+from typing import Union
 
 C_INTEGER_TYPES = [c_byte , c_ubyte , c_short , c_ushort , c_int , c_uint , c_long , c_ulong , c_longlong , c_ulonglong , c_size_t , c_ssize_t , c_time_t]
 C_FLOAT_TYPES = [c_float, c_double, c_longdouble]
 
-def mapCType(s:str) -> Union[type, None]:
+def mapStrCType(s:str) -> Union[type, None]:
     match s:
         case "i32":
             return c_int
