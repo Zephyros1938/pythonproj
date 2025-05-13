@@ -12,7 +12,9 @@ bool INITIALIZED = false;
 
 using namespace std;
 
+#ifdef __cplusplus
 extern "C" {
+#endif
 
 std::map<LEVELS, const char *> LEVEL_KEY = {{LEVELS::ERROR, "[ ERROR ]"},
                                             {LEVELS::WARN, "[ WARN  ]"},
@@ -79,4 +81,7 @@ int main() {
   std::cout << "Hello World!" << std::endl;
   return 0;
 }
+
+#ifdef __cplusplus
 }
+#endif
