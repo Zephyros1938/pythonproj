@@ -4,17 +4,14 @@ from OpenGL.GL import glActiveTexture, glBindTexture, glBindVertexArray, glDrawE
 from OpenGL.GL import GL_TEXTURE0, GL_TEXTURE_2D
 from OpenGL.GL import GL_TRIANGLES, GL_UNSIGNED_INT
 from resources.scripts.shader import Shader
+from .texture import Texture
+from lib import getlib
 
 @dataclass
 class Vertex:
     Position: vec3
     Normal: vec3
     TexCoords: vec2
-
-@dataclass
-class Texture:
-    id: int
-    type: str
 
 @dataclass
 class Mesh:
@@ -84,25 +81,23 @@ class Mesh:
 
         glBindVertexArray(0)
 
-from pyassimp.structs import Material as AIMaterial, Texture as AITexture, Mesh as AIMesh, Node as AINode, Scene as AIScene
-from pyassimp.postprocess import aiProcess_FindInvalidData, aiProcessPreset_TargetRealtime_Quality, aiProcess_OptimizeGraph, aiProcess_Debone, aiProcess_ImproveCacheLocality, aiProcessPreset_TargetRealtime_MaxQuality, aiProcess_FindInstances, aiProcess_ValidateDataStructure, aiProcess_JoinIdenticalVertices, aiProcess_FindDegenerates, aiProcess_PreTransformVertices, aiProcess_RemoveRedundantMaterials, aiProcess_MakeLeftHanded, aiProcess_FixTexturePaths, aiProcess_OptimizeMeshes, aiProcess_OptimizeAnimations, aiProcess_FixInfacingNormals, aiProcess_GenEntityMeshes, aiProcess_ConvertToLeftHanded, aiProcess_FlipUVs, aiProcess_RemoveComponent, aiProcess_GenSmoothNormals, aiProcess_TransformUVCoords, aiProcess_SplitLargeMeshes, aiProcessPreset_TargetRealtime_Fast, aiProcess_FlipWindingOrder, aiProcess_CalcTangentSpace, aiProcess_SortByPType, aiProcess_GenUVCoords, aiProcess_GenNormals, aiProcess_Triangulate, aiProcess_EmbedTextures, aiProcess_LimitBoneWeights, aiProcess_SplitByBoneCount
-
-__aiProcessAllowedValues = [a for a in ( __import__("pyassimp.postprocess.").locals())]
+assimp = getlib("assimp")
 
 @dataclass
 class Model:
-    textures_loaded = list[Texture]
+    textures_loaded: list[Texture]
     meshes: list[Mesh]
     directory: str
     gammaCorrection: bool
 
-    def __init__(self, path: str, flags: list[int]):
+    def __init__(self, path: str, flags: list[int], gammaCorrection: bool = True):
+        self.textures_loaded = []
+        self.directory = ""
+        self.gammaCorrection = gammaCorrection
         self.__loadModel(path)
 
     def draw(self, shader: Shader):
         [m.draw(shader) for m in self.meshes]
 
     def __loadModel(self, path: str):
-        from pyassimp import load
-        with load(path) as scene:
-            pass
+        pass

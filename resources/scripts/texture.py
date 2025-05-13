@@ -17,7 +17,7 @@ stb_image = getlib("stb_image")
 @dataclass
 class Texture:
     path: str
-    type_s: str
+    type: str
     id: int
 
     def __init__(
@@ -107,5 +107,5 @@ class Texture:
         except Exception as e:
             raise Exception(f"[ERROR] Failed to load image '{os.path.abspath(path)}' with error {e}")
 
-        self.type_s = type_s
+        self.type = type_s
         self.id = texture_id.value

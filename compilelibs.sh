@@ -29,7 +29,7 @@ for item in $TO_COMPILE; do
     echo "[ INFO    ]  Start compile Linux libraries"
     echo "[ COMPILE ]   Compile $item.a"
     g++ -c $LIBRARIES_DIR/$item.cpp -o $COMPILED_DIR/$item/$item.o -fPIC
-    g++ -shared -o $COMPILED_DIR/$item/$item.so $COMPILED_DIR/$item/$item.o
+    g++ -shared -o $COMPILED_DIR/$item/$item.so $COMPILED_DIR/$item/$item.o -lassimp
     if [ ! -f $COMPILED_DIR/$item/$item.o ]; then
         echo "[ ERROR   ] Failed to compile object file ($item.o)."
         exit 1
@@ -47,7 +47,7 @@ for item in $TO_COMPILE; do
         fi
         ar rcs $COMPILED_DIR/$item/$item.lib $COMPILED_DIR/$item/$item.o
         echo "[ COMPILE ]   Compile $item.dll"
-        x86_64-w64-mingw32-g++ -shared -o $COMPILED_DIR/$item/$item.dll $COMPILED_DIR/$item/$item.o
+        x86_64-w64-mingw32-g++ -shared -o $COMPILED_DIR/$item/$item.dll $COMPILED_DIR/$item/$item.o -lassimp
     fi
 done
 

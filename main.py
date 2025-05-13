@@ -3,6 +3,10 @@ from lib import cstr
 lib.init()
 logger = lib.getlib("logger")
 logger.init(lib.getEnumV("logger", "LEVELS", "INFO"))
+assimp = lib.getlib("assimp")
+print(assimp.aiGetErrorString())
+print(lib.getEnum("assimp", "aiPostProcessSteps").aiProcess_CalcTangentSpace.value)
+assimp.importer
 
 import OpenGL.GL as GL
 import glfw as GLFW
@@ -108,7 +112,7 @@ def main():
     window.show()
     GL.glViewport(0, 0, VIEWPORT.x, VIEWPORT.y)
 
-    tt: Texture = Texture("resources/textures/egg.png", "")
+    tt: Texture = Texture("resources/textures/help.png", "")
 
     def fps_notify():
         from time import sleep
