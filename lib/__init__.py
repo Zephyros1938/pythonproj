@@ -116,7 +116,7 @@ def __dict_enum_to_c_enum(enum_name: str, enum_values: dict[str, int]):
     return CEnumWrapper
 
 
-def __set_lib_contents(libName: str, funcs: list[Union[__cdll_function_def, _cdll_enum]], debugInternals: bool = False, debug: bool = False):
+def __set_lib_contents(library: Any, libName: str, funcs: list[Union[__cdll_function_def, _cdll_enum]], debugInternals: bool = False, debug: bool = False):
     """Sets all of the library's contents"""
     for f in funcs:
         if isinstance(f, __cdll_function_def):
@@ -187,7 +187,6 @@ def __load_library(libname: str) -> Any:
         raise OSError("[LIB ERROR] Unsupported operating system: " + os.name)
 
     try:
-
         lib = ffi.dlopen(lib_path)
         __LibraryStorage._addLibrary(libname, lib)
         return lib
@@ -196,7 +195,7 @@ def __load_library(libname: str) -> Any:
 
 
 
-libs: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = loadPyFFI("./libs.pyffi", False)
+libs: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = loadPyFFI("./test.pyffi", False)
 
 def init(debugLibInternals: bool = False, debug: bool = False):
     """Initializes the library loader; call this before any other imports."""
@@ -211,7 +210,7 @@ def init(debugLibInternals: bool = False, debug: bool = False):
     print("[LIB INFO] Initializing libraries")
     for lib, items in libs.items():
         print(f"[LIB INFO]  Loading library {lib}")
-        __load_library(lib)
-        __set_lib_contents(lib, items, debugInternals=debugLibInternals, debug=debug)
+        library = __load_library(lib)
+        __set_lib_contents(library, lib, items, debugInternals=debugLibInternals, debug=debug)
     print("[LIB INFO] Finished Initializing libraries")
     __initialized = True
