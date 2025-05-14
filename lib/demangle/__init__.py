@@ -83,7 +83,7 @@ def parse_mangled_name(s: str):
         name = s[i:i+length]
         if not name:
             break
-        print(name)
+        # print(name)
 
         # parts.append(length_str)
         parts.append(name)
