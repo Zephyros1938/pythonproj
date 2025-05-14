@@ -12,7 +12,7 @@ def demangleABI(path: str):
     mangledNames = getMangledABI(path)
     symbols: TreeDict = {}
     for start, symbol in mangledNames.items():
-        print(f"[{start: 8}]: {symbol}")
+        print(f"[{start: 8}]: {parse_mangled_name(symbol)} ({symbol})")
 
 def isValidMangledChar(c: bytes):
     return c in VALID_MANGLED_CHARS
@@ -43,7 +43,37 @@ def getMangledABI(path: str) -> dict[int, str]:
             i += 1
     return mangledNames
 
+def parse_mangled_name(s: str):
+    parts = []
 
+    # First, extract the leading mangling prefix, like _ZN
+    prefix_match = regex.match(r'^(_Z[NKTR]*)', s)
+    if prefix_match:
+        prefix = prefix_match.group(1)
+        parts.append(prefix)
+        s = s[len(prefix):]
+
+    # Now parse length-prefixed names
+    i = 0
+    while i < len(s):
+        # Match a number indicating the length
+        length_match = regex.match(r'(\d+)', s[i:])
+        if not length_match:
+            break
+
+        length_str = length_match.group(1)
+        length = int(length_str)
+        i += len(length_str)
+
+        name = s[i:i+length]
+        if not name:
+            break
+
+        parts.append(length_str)
+        parts.append(name)
+        i += length
+
+    return parts
 
 
 class CppTypes(Enum):
