@@ -1,4 +1,12 @@
 from enum import Enum
+from typing import Union, Any
+#
+# Taken from https://www.swag.uwaterloo.ca/acd/docs/ItaniumC++ABI.htm
+#
+
+
+
+
 class CppTypes(Enum):
     VOID                = "v"
     WCHAR_T             = "w"
@@ -73,7 +81,7 @@ class CppOperators(Enum):
     BITWISE_XOR             = "eo"
     LOGICAL_AND             = "aa"
     LOGICAL_OR              = "oo"
-    ASSIGN                  = "as"
+    ASSIGN                  = "aS"
     PLUS_ASSIGN             = "pL"
     MINUS_ASSIGN            = "mI"
     MULTIPLY_ASSIGN         = "mL"
@@ -95,19 +103,19 @@ class CppOperators(Enum):
     CALL                    = "cl"
     INDEX                   = "ix"
     ARROW                   = "pt"
-    ARROW_STAR              = "pt"
+    ARROW_STAR              = "pm"
     CONVERSION              = "cv"
     FUNCTION_POINTER        = "fp"  # Not standard—it may be internal
-
+CppOperatorsList = ['new', 'delete', 'new[]', 'delete[]', '+', '-', '*', '&', '~', '++', '--', '/', '%', '|', '^', '&&', '||', '=', '+=', '-=', '*=', '/=', '%=', '&=', '|=', '^=', '<<', '>>', '<<=', '>>=', '==', '!=', '<', '>', '<=', '>=', '()', '[]', '->', '->*']
 # Substitutions for common standard library names (Itanium ABI §5.1.9)
 class CppStandardNamespaces(Enum):
+    STD_NAMESPACE       = "St"  # Represents 'std::'
     STD_ALLOCATOR       = "Sa"
     STD_BASIC_STRING    = "Sb"
     STD_STRING          = "Ss"
     STD_ISTREAM         = "Si"
     STD_OSTREAM         = "So"
     STD_IOSTREAM        = "Sd"
-    STD_NAMESPACE       = "St"  # Represents 'std::'
 
 fixed_tokens = {
     # start
@@ -169,26 +177,133 @@ fixed_tokens = {
     CppOperators.FUNCTION_POINTER.value
 }
 
-def getFromItaniumABI(s: str):
+def getTypeFromItaniumABI(s: Union[str, CppTypes]):
+    if isinstance(s, str):
+        s = getEnumKeyFromValue(CppTypes, s)
     match s:
-        VOID
-    WCHAR_T
-    BOOL
-    CHAR
-    SIGNED_CHAR
-    UNSIGNED_CHAR
-    SHORT
-    UNSIGNED_SHORT
-    INT
-    UNSIGNED_INT
-    LONG
-    UNSIGNED_LONG
-    LONG_LONG
-    UNSIGNED_LONG_LONG
-    INT128
-    UNSIGNED_INT128
-    FLOAT
-    DOUBLE
-    LONG_DOUBLE
-    FLOAT128
-    ELLIPSIS
+        case CppTypes.VOID: return "void"
+        case CppTypes.WCHAR_T: return "wchar_t"
+        case CppTypes.BOOL: return "bool"
+        case CppTypes.CHAR: return "char"
+        case CppTypes.SIGNED_CHAR: return "signed char"
+        case CppTypes.UNSIGNED_CHAR: return "unsigned char"
+        case CppTypes.SHORT: return "short"
+        case CppTypes.UNSIGNED_SHORT: return "unsigned short"
+        case CppTypes.INT: return "int"
+        case CppTypes.UNSIGNED_INT: return "unsigned int"
+        case CppTypes.LONG: return "long"
+        case CppTypes.UNSIGNED_LONG: return "unsigned long"
+        case CppTypes.LONG_LONG: return "long long"
+        case CppTypes.UNSIGNED_LONG_LONG: return "unsigned long long"
+        case CppTypes.INT128: return "__int128"
+        case CppTypes.UNSIGNED_INT128: return "unsigned __int128"
+        case CppTypes.FLOAT: return "float"
+        case CppTypes.DOUBLE: return "double"
+        case CppTypes.LONG_DOUBLE: return "long double"
+        case CppTypes.FLOAT128: return "__float128"
+        case CppTypes.ELLIPSIS: return "..."
+        case _: raise TypeError(f"Invalid Itanium ABI value: {s}")
+def getQualifierFromItaniumABI(s: Union[str, CppQualifiers]):
+    if isinstance(s, str):
+        s = getEnumKeyFromValue(CppQualifiers, s)
+    match s:
+        case CppQualifiers.CONST: return "const"
+        case CppQualifiers.VOLATILE: return "volatile"
+        case CppQualifiers.RESTRICT: return "__restrict"
+        case _: raise TypeError(f"Invalid Itanium ABI value: {s}")
+def getOperatorFromItaniumABI(s: Union[str, CppOperators]):
+    if isinstance(s, str):
+        s = getEnumKeyFromValue(CppOperators, s)
+    match s:
+        case CppOperators.NEW: return "new"
+        case CppOperators.DELETE: return "delete"
+        case CppOperators.NEW_ARRAY: return "new[]"
+        case CppOperators.DELETE_ARRAY: return "delete[]"
+        case CppOperators.UNARY_PLUS: return "+"
+        case CppOperators.UNARY_MINUS: return "-"
+        case CppOperators.DEREFERENCE: return "*"
+        case CppOperators.ADDRESS_OF: return "&"
+        case CppOperators.COMPLEMENT: return "~"
+        case CppOperators.INCREMENT: return "++"
+        case CppOperators.DECREMENT: return "--"
+        case CppOperators.ADD: return "+"
+        case CppOperators.SUBTRACT: return "-"
+        case CppOperators.MULTIPLY: return "*"
+        case CppOperators.DIVIDE: return "/"
+        case CppOperators.MODULO: return "%"
+        case CppOperators.BITWISE_AND: return "&"
+        case CppOperators.BITWISE_OR: return "|"
+        case CppOperators.BITWISE_XOR: return "^"
+        case CppOperators.LOGICAL_AND: return "&&"
+        case CppOperators.LOGICAL_OR: return "||"
+        case CppOperators.ASSIGN: return "="
+        case CppOperators.PLUS_ASSIGN: return "+="
+        case CppOperators.MINUS_ASSIGN: return "-="
+        case CppOperators.MULTIPLY_ASSIGN: return "*="
+        case CppOperators.DIVIDE_ASSIGN: return "/="
+        case CppOperators.MODULO_ASSIGN: return "%="
+        case CppOperators.BITWISE_AND_ASSIGN: return "&="
+        case CppOperators.BITWISE_OR_ASSIGN: return "|="
+        case CppOperators.BITWISE_XOR_ASSIGN: return "^="
+        case CppOperators.SHIFT_LEFT: return "<<"
+        case CppOperators.SHIFT_RIGHT: return ">>"
+        case CppOperators.SHIFT_LEFT_ASSIGN: return "<<="
+        case CppOperators.SHIFT_RIGHT_ASSIGN: return ">>="
+        case CppOperators.EQUAL: return "=="
+        case CppOperators.NOT_EQUAL: return "!="
+        case CppOperators.LESS_THAN: return "<"
+        case CppOperators.GREATER_THAN: return ">"
+        case CppOperators.LESS_EQUAL: return "<="
+        case CppOperators.GREATER_EQUAL: return ">="
+        case CppOperators.CALL: return "()"
+        case CppOperators.INDEX: return "[]"
+        case CppOperators.ARROW: return "->"
+        case CppOperators.ARROW_STAR: return "->*"
+        case CppOperators.CONVERSION: raise Exception("Conversion operator not yet supported")
+        case CppOperators.FUNCTION_POINTER: raise Exception("Function Pointer operator not yet supported")
+        case _: raise TypeError(f"Invalid Itanium ABI value: {s}")
+def getNamespaceFromItaniumABI(s: Union[str, CppStandardNamespaces]) -> list[str]:
+    if isinstance(s, str):
+        senum = getEnumKeyFromValue(CppStandardNamespaces, s)
+    else:
+        senum = s
+    match senum:
+        case CppStandardNamespaces.STD_NAMESPACE: return ["std"]
+        case CppStandardNamespaces.STD_ALLOCATOR: return ["std", "allocator"]
+        case CppStandardNamespaces.STD_BASIC_STRING: return ["std", "basic_string"]
+        case CppStandardNamespaces.STD_STRING: return ["std", "string"]
+        case CppStandardNamespaces.STD_ISTREAM: return ["std", "istream"]
+        case CppStandardNamespaces.STD_OSTREAM: return ["std", "ostream"]
+        case CppStandardNamespaces.STD_IOSTREAM: return ["std", "iostream"]
+        case _: return list(s)
+def getCompoundTypeFromItaniumABI(s: Union[str, CppCompoundTypes]):
+    if isinstance(s, str):
+        se = getEnumKeyFromValue(CppCompoundTypes, s)
+    else:
+        se = s
+    match se:
+        case CppCompoundTypes.POINTER: return "*"
+        case CppCompoundTypes.LVALUE_REFERENCE: return "&"
+        case CppCompoundTypes.RVALUE_REFERENCE: return "&&"
+        case CppCompoundTypes.COMPLEX: return "COMPLEX"
+        case CppCompoundTypes.IMAGINARY: return "i"
+        case CppCompoundTypes.POINTER_TO_MEMBER: return "->*"
+        case _: raise TypeError(f"Invalid Itanium ABI value: {s}")
+def getSpecialFormFromItaniumABI(s: Union[str, CppSpecialForms]):
+    if isinstance(s, str):
+        se = getEnumKeyFromValue(CppSpecialForms, s)
+    else:
+        se = s
+    match se:
+        case CppSpecialForms.FUNCTION_TYPE: return
+        case CppSpecialForms.ARRAY_TYPE: return
+        case CppSpecialForms.TEMPLATE_PARAM: return
+        case CppSpecialForms.SUBSTITUTION: return
+        case _: raise TypeError(f"Invalid Itanium ABI value: {s}")
+def getEnumKeyFromValue(enum, value: Any):
+    for k, v in enum.__members__.items():
+        # print(k, v.value)
+        if v.value == value:
+            # print(v)
+            return v
+    raise ValueError(f"{value} not found in {enum}!")

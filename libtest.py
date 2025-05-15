@@ -7,5 +7,5 @@
 # test.TestClass_doSomething(c, 3)
 # c2 = test.TestClass_New(1)
 # test.TestClass_doSomething(c, 3)
-from lib.demangle import demangleABI
+from lib.demangle import demangleABI, ItaniumABITypes
 demangleABI("libraries/compiled/test/test.so")
