@@ -45,8 +45,8 @@ def demangleABI(path: str):
             if not sym.isnumeric():
                 plist.append(sym)
         # [plist.append(sym) for sym in chunkMangledName(symbol) if not sym.isnumeric()]
-        print(f"[{start: 8}]: {" ".join([x for x in plist])} ({symbol})")
-        print("".join(parseMangledChunks(plist, symbols)))
+        print(f"[{start: 8}]: {"".join([x for x in plist])} ({symbol})")
+        print("\tParsed: "+"".join(parseMangledChunks(plist, symbols))+"\n")
 
 def isValidMangledChar(c: bytes):
     assert len(c) == 1
@@ -145,7 +145,10 @@ def chunkMangledName(s: str) -> list[str]:
 
 def parseMangledChunks(tokens: list[str], tree: TreeDict):
     # print(tree)
+    templateSet: dict[int, list[str]] = {}
     parsed = []
+    selectedSet = parsed
+
     storedCompoundTypes = []
     storedQualifiers = []
     nested = False
@@ -154,17 +157,33 @@ def parseMangledChunks(tokens: list[str], tree: TreeDict):
     i = 0;
     while i < len(tokens):
         token = tokens[i]
+        toset = token
+
         if token == "N":
             nested = True
         if nested and token == "E":
             nested = False
+        if token == "I":
+            functionMakeDepth += 1
+            print(f"    Moved to {functionMakeDepth} at {token} ({i})")
+        if token == "E" and functionMakeDepth > 0:
+            functionMakeDepth -= 1
+            print(f"    Moved to {functionMakeDepth} at {token} ({i})")
+        if functionMakeDepth <= 0:
+            selectedSet = parsed
+        else:
+
+            if not functionMakeDepth in templateSet and functionMakeDepth > 0:
+                templateSet[functionMakeDepth] = []
+            selectedSet = templateSet[functionMakeDepth]
+
         try:
             namespaces = ItaniumABITypes.getNamespaceFromItaniumABI(token)
             for k in range(len(namespaces)):
                 ns = namespaces[k]
-                parsed.append( ns)
+                selectedSet.append( ns)
                 if k < len(namespaces)-1 or len(namespaces) <=1:
-                    parsed.append( "::")
+                    selectedSet.append( "::")
             i += 1
             continue
         except:
@@ -183,20 +202,20 @@ def parseMangledChunks(tokens: list[str], tree: TreeDict):
                     ty += "".join(storedCompoundTypes)
                     storedCompoundTypes = []
                     # print("F", parsed[i-1])
-                    if i == len(tokens)-1 and tokens[i-1] == "E" and not returnSet:
-                        parsed.insert(0, ty+" ")
+                    if i == len(tokens)-1 and not returnSet:
+                        selectedSet.insert(0, ty+" ")
                         returnSet = True
                     else:
-                        if parsed[i-1] not in ItaniumABITypes.CppOperatorsList:
-                            parsed.append(f"({ty})")
+                        if selectedSet[i-1] not in ItaniumABITypes.CppOperatorsList:
+                            selectedSet.append(f"({ty})")
                         else:
-                            parsed.append(ty)
+                            selectedSet.append(ty)
                     i += 1
                     continue
                 except:
                     try:
                         op = ItaniumABITypes.getOperatorFromItaniumABI(token)
-                        parsed.append( f"{op}")
+                        selectedSet.append( f"::operator{op}")
                         i += 1
                         continue
                     except:
@@ -206,9 +225,19 @@ def parseMangledChunks(tokens: list[str], tree: TreeDict):
                             i += 1
                             continue
                         except:
-                            parsed.append( f"{token}")
+                            if token.startswith("T"):
+                                parsed.append(token)
+                            else:
+                                if not token in ["I", "E"]:
+                                    selectedSet.append(token)
         if i > 0 and nested:
-            parsed.append("::")
+            selectedSet.append("::")
         i += 1
+    for k, v in templateSet.items():
+        templateKey = f"T{'' if k-1 <= 0 else k-2}_"
+        for i in range(len(parsed)):
+            if parsed[i] == templateKey:
+                print(f"    Setting: {templateKey} to {''.join(v)}")
+                parsed[i] = "".join(v)
 
     return parsed
