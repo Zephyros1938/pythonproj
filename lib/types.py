@@ -2,8 +2,6 @@ from typing import Union, Any, Dict, Tuple, Type, TypeAlias
 from enum import EnumMeta
 from dataclasses import dataclass
 
-TreeDict: TypeAlias = Dict[str, Union[list[Tuple[str, Type]], 'TreeDict']]
-
 @dataclass(init=False)
 class CEnumMeta(type):
     _enumtype_: Union[EnumMeta, None]

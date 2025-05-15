@@ -1,26 +1,51 @@
-import re as regex
-from enum import Enum
-from ..types import TreeDict
+import re
+from typing import Union, Dict, TypeAlias
+from .ItaniumABITypes import fixed_tokens
 
 NUMERICS = [1,2,3,4,5,6,7,8,9,0]
 VALID_MANGLED_CHARS = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_@$."
 
-
+TreeDict: TypeAlias = Dict[
+    str, # Namespace / Class
+    Union
+        [
+        tuple # Method
+            [
+            str, # Method name
+            list # Method args
+                [
+                Union
+                    [
+                    str, # One version of method
+                        # ex: fun(int) -> _Z3funi
+                    list # Method with overloads
+                        # ex: fun(int) -> _Z3funi
+                        # ex: fun(float) -> _Z3funf
+                        [
+                        str
+                    ]
+                ]
+            ]
+        ],
+        'TreeDict' # Nested namespace/class
+    ]
+]
 
 def demangleABI(path: str):
     print("path", path)
     mangledNames = getMangledABI(path)
     symbols: TreeDict = {}
     for start, symbol in mangledNames.items():
-        plist = parse_mangled_name(symbol)
-        justlen = 150
+        plist = []
+        [plist.append(sym) for sym in chunk_mangled_name(symbol) if not sym.isnumeric()]
         print(f"[{start: 8}]: {" ".join([x for x in plist])} ({symbol})")
 
 def isValidMangledChar(c: bytes):
+    assert len(c) == 1
     return c in VALID_MANGLED_CHARS
 
 def isMangledABISymbol(symbol: str) -> bool:
-    return symbol.startswith("_Z") and regex.match(r"^_Z[\w\d@.]+$", symbol) is not None
+    return symbol.startswith("_Z") and re.match(r"^_Z[\w\d@.]+$", symbol) is not None
 
 def getMangledABI(path: str) -> dict[int, str]:
     mangledNames: dict[int, str] = {}
@@ -45,176 +70,65 @@ def getMangledABI(path: str) -> dict[int, str]:
             i += 1
     return mangledNames
 
-def parse_mangled_name(s: str):
-    parts = []
-    print("s:", s)
-
-    # extract the leading mangling prefix, like _ZN
-    prefix_match = regex.match(PREFIX_MATCH, s)
-    if prefix_match:
-        prefix = prefix_match.group(1)
-        # print("pre", prefix)
-        parts.append(prefix)
-        s = s[len(prefix):]
-    operator_match = regex.match(OPERATOR_MATCH, s)
-    if operator_match:
-        op = operator_match.group(1)
-        if op:
-            parts.append(op)
-            s = s[len(op):]
-
-
-    # parse length-prefixed names
-
+def chunk_mangled_name(s: str) -> list[str]:
+    tokens = []
     i = 0
-    length = 0
+
+
+
+    # Pattern for substitutions like S<number>_
+    substitution_pattern = re.compile(r'S(\d+)_')
+
+    # Pattern for template parameter like T_, T0_, T1_ ...
+    template_param_pattern = re.compile(r'T(\d*)_')
+
+    if s.startswith("_Z"):
+        # tokens.append("_Z")
+        i = 2
+
     while i < len(s):
-        # Match a number indicating the length
-        length_match = regex.match(r'(\d+)', s[i:])
-        if not length_match:
-            break
+        # Try to match fixed tokens (two-char fixed tokens)
+        if i + 1 < len(s):
+            two_chars = s[i:i+2]
+            if two_chars in fixed_tokens:
+                tokens.append(two_chars)
+                i += 2
+                continue
 
-        length_str = length_match.group(1)
-        length = int(length_str)
-        i += len(length_str)
-        # m = regex.match(r'ls*', s[i:i+length])
-        # print(i, i+length, s[i:i+length])
+        # Try substitutions S<number>_
+        sub_match = substitution_pattern.match(s, i)
+        if sub_match:
+            full_sub = sub_match.group(0)
+            tokens.append(full_sub)
+            i += len(full_sub)
+            continue
 
-        name = s[i:i+length]
-        if not name:
-            break
-        # print(name)
+        # Try template params T_, T0_, T1_ ...
+        temp_match = template_param_pattern.match(s, i)
+        if temp_match:
+            full_temp = temp_match.group(0)
+            tokens.append(full_temp)
+            i += len(full_temp)
+            continue
 
-        # parts.append(length_str)
-        parts.append(name)
-        i += length
+        # Length-prefixed identifiers
+        if s[i].isdigit():
+            length_match = re.match(r'(\d+)', s[i:])
+            if length_match:
+                length_str = length_match.group(1)
+                length = int(length_str)
+                i += len(length_str)
+                name = s[i:i + length]
+                tokens.append(length_str)
+                tokens.append(name)
+                i += length
+                continue
+            else:
+                raise ValueError(f"Malformed length prefix at position {i}")
 
-    if(i < len(s)):
-        remaining = s[i:]
-        # print("R:", remaining)
-        return_match = regex.match(RETURN_MATCH, remaining)
-        # print("rm", return_match)
-        if return_match:
-            print("p:", return_match.group(1))
-            parts.append(return_match.group(1))
-        elif remaining.startswith("I"):
-            remaining_processed = parse_mangled_name(remaining)
-            print("I:", remaining_processed)
-            # if len(remaining_processed) > 0:
-            #     if remaining_processed[0].startswith("I"):
-            #         remaining_temp = remaining_processed[1:]
-            #         remaining_processed = ["I", remaining_processed[0].replace("I","")]
-            #         [remaining_processed.append(x) for x in remaining_temp]
-            [parts.append(n) for n in remaining_processed]
-        elif remaining.startswith("E"):
-            remaining_processed = parse_mangled_name(remaining)
-            print("E:", remaining_processed)
-            [parts.append(p) for p in remaining_processed]
+        # Otherwise, single char token
+        tokens.append(s[i])
+        i += 1
 
-    # parts[0] = parts[0].replace("_Z", "")
-    parts = [p for p in parts if p != '']
-    return parts
-
-class CppTypes(Enum):
-    # Fundamental types
-    VOID                = "v"
-    WCHAR_T             = "w"
-    BOOL                = "b"
-    CHAR                = "c"
-    SIGNED_CHAR         = "a"
-    UNSIGNED_CHAR       = "h"
-    SHORT               = "s"
-    UNSIGNED_SHORT      = "t"
-    INT                 = "i"
-    UNSIGNED_INT        = "j"
-    LONG                = "l"
-    UNSIGNED_LONG       = "m"
-    LONG_LONG           = "x"
-    UNSIGNED_LONG_LONG  = "y"
-    INT128              = "n"
-    UNSIGNED_INT128     = "o"
-    FLOAT               = "f"
-    DOUBLE              = "d"
-    LONG_DOUBLE         = "e"
-    FLOAT128            = "g"
-    ELLIPSIS            = "z"
-
-class CppQualifiers(Enum):
-    CONST      = "K"
-    VOLATILE   = "V"
-    RESTRICT   = "r"
-
-class CppSymbolLinkage(Enum):
-    LOCAL = "L"  # internal linkage
-    LAMBDA = "Z" # lamba / local function object
-    NESTED = "N"
-
-class CppCompoundTypes(Enum):
-    POINTER             = "P"
-    LVALUE_REFERENCE    = "R"
-    RVALUE_REFERENCE    = "O"
-    COMPLEX             = "C"
-    IMAGINARY           = "G"
-    POINTER_TO_MEMBER   = "M"  # Used with class type following it
-
-class CppSpecialForms(Enum):
-    FUNCTION_TYPE       = "F"  # Must be followed by parameters and closed with 'E'
-    ARRAY_TYPE          = "A"  # Followed by size and type, ends with '_'
-    TEMPLATE_PARAM      = "T"  # Followed by a digit
-    SUBSTITUTION        = "S"  # Followed by other markers (e.g., 'S_' or 'S1_')
-
-class CppOperators(Enum):
-    OPERATOR            = "ls"
-
-# Helper function for known substitutions or standard types
-class CppStandardSubstitutions(Enum):
-    STD_ALLOCATOR       = "Sa"
-    STD_BASIC_STRING    = "Sb"
-    STD_STRING          = "Ss"
-    STD_ISTREAM         = "Si"
-    STD_OSTREAM         = "So"
-    STD_IOSTREAM        = "Sd"
-    STD_NAMESPACE       = "St" # Represents 'std::'
-
-PREFIX_MATCH = fr'^(E?(_Z)?I?[\
-    ({CppSymbolLinkage.NESTED.value})\
-    ({CppQualifiers.CONST.value})\
-    ({CppQualifiers.VOLATILE.value})\
-    ({CppSpecialForms.TEMPLATE_PARAM.value})\
-    ({CppCompoundTypes.LVALUE_REFERENCE.value})\
-    ({CppStandardSubstitutions.STD_NAMESPACE.value})\
-    ({CppStandardSubstitutions.STD_ALLOCATOR.value})\
-    ({CppStandardSubstitutions.STD_BASIC_STRING.value})\
-    ({CppStandardSubstitutions.STD_STRING.value})\
-    ({CppStandardSubstitutions.STD_ISTREAM.value})\
-    ({CppStandardSubstitutions.STD_OSTREAM.value})\
-    ({CppStandardSubstitutions.STD_IOSTREAM.value})\
-    ]*)'
-
-OPERATOR_MATCH = fr'^([\
-({CppOperators.OPERATOR.value})\
-]*)'
-
-RETURN_MATCH = fr'(E?[\
-({CppTypes.VOID.value})\
-({CppTypes.WCHAR_T.value})\
-({CppTypes.BOOL.value})\
-({CppTypes.CHAR.value})\
-({CppTypes.SIGNED_CHAR.value})\
-({CppTypes.UNSIGNED_CHAR.value})\
-({CppTypes.SHORT.value})\
-({CppTypes.UNSIGNED_SHORT.value})\
-({CppTypes.INT.value})\
-({CppTypes.UNSIGNED_INT.value})\
-({CppTypes.LONG.value})\
-({CppTypes.UNSIGNED_LONG.value})\
-({CppTypes.LONG_LONG.value})\
-({CppTypes.UNSIGNED_LONG_LONG.value})\
-({CppTypes.INT128.value})\
-({CppTypes.UNSIGNED_INT128.value})\
-({CppTypes.FLOAT.value})\
-({CppTypes.DOUBLE.value})\
-({CppTypes.LONG_DOUBLE.value})\
-({CppTypes.FLOAT128.value})\
-({CppTypes.ELLIPSIS.value})\
-]+)$'
+    assert "".join(tokens) == s[2:], "Tokens do not reassemble original string"
+    return tokens
