@@ -30,7 +30,7 @@ TreeDict: TypeAlias = Dict[
     ]
 ]
 
-def demangleABI(path: str):
+def demangleABI(path: str): # main
     print("path", path)
     mangledNames = getMangledABI(path)
     symbols: TreeDict = {}
@@ -45,8 +45,8 @@ def demangleABI(path: str):
             if not sym.isnumeric():
                 plist.append(sym)
         # [plist.append(sym) for sym in chunkMangledName(symbol) if not sym.isnumeric()]
-        print(f"[{start: 8}]: {"".join([x for x in plist])} ({symbol})")
-        print("\tParsed: "+"".join(parseMangledChunks(plist, symbols))+"\n")
+        print(f"[{hex(start):<8}]: {" ".join([x for x in plist])} ({symbol})")
+        print("\tParsed: "+"".join(parseMangledString(plist)))
 
 def isValidMangledChar(c: bytes):
     assert len(c) == 1
@@ -68,6 +68,9 @@ def getMangledABI(path: str) -> dict[int, str]:
                 end += 1
             try:
                 symbol = data[start:end].decode('ascii')
+                if "@" in symbol:
+                    i+=1
+                    continue
                 symbol = symbol.split('@')[0]  # strip GLIBCXX version info
                 if isMangledABISymbol(symbol):
                     mangledNames[start] = symbol
@@ -107,7 +110,7 @@ def chunkMangledName(s: str) -> list[str]:
         sub_match = substitution_pattern.match(s, i)
         if sub_match:
             full_sub = sub_match.group(0)
-            print("Substitution", full_sub)
+            # print("Substitution", full_sub)
             tokens.append(full_sub)
             i += len(full_sub)
             continue
@@ -116,7 +119,7 @@ def chunkMangledName(s: str) -> list[str]:
         temp_match = template_param_pattern.match(s, i)
         if temp_match:
             full_temp = temp_match.group(0)
-            print("Temp ", full_temp)
+            # print("Temp ", full_temp)
             tokens.append(full_temp)
             i += len(full_temp)
             continue
@@ -143,101 +146,106 @@ def chunkMangledName(s: str) -> list[str]:
     assert "".join(tokens) == s[2:], "Tokens do not reassemble original string"
     return tokens
 
-def parseMangledChunks(tokens: list[str], tree: TreeDict):
-    # print(tree)
-    templateSet: dict[int, list[str]] = {}
+def parseMangledString(mangled: list[str]):
     parsed = []
-    selectedSet = parsed
+
+    i = 0
+    while i < len(mangled):
+
+        i+=1
+
+    return parsed
+
+def parseMangledChunks(tokens: list[str], tree: dict) -> str:
+    templateSet: dict[int, list[str]] = {}
+    substitutions: list[str] = []
 
     storedCompoundTypes = []
     storedQualifiers = []
     nested = False
     functionMakeDepth = 0
     returnSet = False
-    i = 0;
+
+    nameParts = []
+    argTypes = []
+    returnType = ""
+
+    i = 0
     while i < len(tokens):
         token = tokens[i]
-        toset = token
 
         if token == "N":
             nested = True
-        if nested and token == "E":
-            nested = False
-        if token == "I":
-            functionMakeDepth += 1
-            print(f"    Moved to {functionMakeDepth} at {token} ({i})")
-        if token == "E" and functionMakeDepth > 0:
-            functionMakeDepth -= 1
-            print(f"    Moved to {functionMakeDepth} at {token} ({i})")
-        if functionMakeDepth <= 0:
-            selectedSet = parsed
-        else:
-
-            if not functionMakeDepth in templateSet and functionMakeDepth > 0:
-                templateSet[functionMakeDepth] = []
-            selectedSet = templateSet[functionMakeDepth]
-
-        try:
-            namespaces = ItaniumABITypes.getNamespaceFromItaniumABI(token)
-            for k in range(len(namespaces)):
-                ns = namespaces[k]
-                selectedSet.append( ns)
-                if k < len(namespaces)-1 or len(namespaces) <=1:
-                    selectedSet.append( "::")
             i += 1
             continue
-        except:
-            try:
-                storedCompoundTypes.append( ItaniumABITypes.getCompoundTypeFromItaniumABI(token))
-                i += 1
-                continue
-            except:
-                try:
-                    ty = ""
-                    if(len(storedQualifiers)>0):
-                        ty = " ".join(storedQualifiers)
-                        ty += " "
-                        storedQualifiers = []
-                    ty += ItaniumABITypes.getTypeFromItaniumABI(token)
-                    ty += "".join(storedCompoundTypes)
-                    storedCompoundTypes = []
-                    # print("F", parsed[i-1])
-                    if i == len(tokens)-1 and not returnSet:
-                        selectedSet.insert(0, ty+" ")
-                        returnSet = True
-                    else:
-                        if selectedSet[i-1] not in ItaniumABITypes.CppOperatorsList:
-                            selectedSet.append(f"({ty})")
-                        else:
-                            selectedSet.append(ty)
-                    i += 1
-                    continue
-                except:
-                    try:
-                        op = ItaniumABITypes.getOperatorFromItaniumABI(token)
-                        selectedSet.append( f"::operator{op}")
-                        i += 1
-                        continue
-                    except:
-                        try:
-                            qu = ItaniumABITypes.getQualifierFromItaniumABI(token)
-                            storedQualifiers.append(qu)
-                            i += 1
-                            continue
-                        except:
-                            if token.startswith("T"):
-                                parsed.append(token)
-                            else:
-                                if not token in ["I", "E"]:
-                                    selectedSet.append(token)
-        if i > 0 and nested:
-            selectedSet.append("::")
-        i += 1
-    for k, v in templateSet.items():
-        templateKey = f"T{'' if k-1 <= 0 else k-2}_"
-        for i in range(len(parsed)):
-            if parsed[i] == templateKey:
-                print(f"    Setting: {templateKey} to {''.join(v)}")
-                parsed[i] = "".join(v)
+        elif token == "E":
+            nested = False
+            i += 1
+            continue
+        elif token == "I":
+            functionMakeDepth += 1
+            templateSet[functionMakeDepth] = []
+            i += 1
+            continue
 
-    return parsed
+        try:
+            # Namespace or identifier
+            namespaces = ItaniumABITypes.getNamespaceFromItaniumABI(token)
+            nameParts.extend(namespaces)
+            i += 1
+            continue
+        except KeyError:
+            pass
+
+        try:
+            storedCompoundTypes.append(ItaniumABITypes.getCompoundTypeFromItaniumABI(token))
+            i += 1
+            continue
+        except KeyError:
+            pass
+
+        try:
+            ty = " ".join(storedQualifiers) + " " if storedQualifiers else ""
+            ty += ItaniumABITypes.getTypeFromItaniumABI(token)
+            ty += "".join(storedCompoundTypes)
+            storedQualifiers.clear()
+            storedCompoundTypes.clear()
+
+            # if not returnSet:
+            #     returnType = ty
+            #     returnSet = True
+            # else:
+            argTypes.append(ty)
+            i += 1
+            continue
+        except KeyError:
+            pass
+
+        try:
+            op = ItaniumABITypes.getOperatorFromItaniumABI(token)
+            nameParts.append(f"operator{op}")
+            i += 1
+            continue
+        except KeyError:
+            pass
+
+        try:
+            qu = ItaniumABITypes.getQualifierFromItaniumABI(token)
+            storedQualifiers.append(qu)
+            i += 1
+            continue
+        except KeyError:
+            pass
+
+        if token.startswith("T"):
+            nameParts.append(token)
+        elif token not in ["I", "E"]:
+            nameParts.append(token)
+
+        i += 1
+
+    qualifiedName = "::".join(nameParts)
+    argsFormatted = ", ".join(argTypes)
+    returnTypePrefix = f"{returnType} " if returnType else ""
+    finalSignature = f"{returnTypePrefix}{qualifiedName}({argsFormatted})"
+    return finalSignature

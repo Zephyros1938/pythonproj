@@ -9,3 +9,9 @@
 # test.TestClass_doSomething(c, 3)
 from lib.demangle import demangleABI, ItaniumABITypes
 demangleABI("libraries/compiled/test/test.so")
+# for i in [ItaniumABITypes.CppCompoundTypes, ItaniumABITypes.CppNamePrefixes, ItaniumABITypes.CppOperators, ItaniumABITypes.CppQualifiers, ItaniumABITypes.CppSpecialForms, ItaniumABITypes.CppStandardNamespaces, ItaniumABITypes.CppTypes]:
+#     t = []
+#     k_ = i.__name__
+#     for k, v in i.__members__.items():
+#         t.append(v.value)
+#     print(f"{k_}: ", t)

@@ -202,7 +202,7 @@ def getTypeFromItaniumABI(s: Union[str, CppTypes]):
         case CppTypes.LONG_DOUBLE: return "long double"
         case CppTypes.FLOAT128: return "__float128"
         case CppTypes.ELLIPSIS: return "..."
-        case _: raise TypeError(f"Invalid Itanium ABI value: {s}")
+        case _: raise KeyError(f"Invalid Itanium ABI value: {s}")
 def getQualifierFromItaniumABI(s: Union[str, CppQualifiers]):
     if isinstance(s, str):
         s = getEnumKeyFromValue(CppQualifiers, s)
@@ -210,7 +210,7 @@ def getQualifierFromItaniumABI(s: Union[str, CppQualifiers]):
         case CppQualifiers.CONST: return "const"
         case CppQualifiers.VOLATILE: return "volatile"
         case CppQualifiers.RESTRICT: return "__restrict"
-        case _: raise TypeError(f"Invalid Itanium ABI value: {s}")
+        case _: raise KeyError(f"Invalid Itanium ABI value: {s}")
 def getOperatorFromItaniumABI(s: Union[str, CppOperators]):
     if isinstance(s, str):
         s = getEnumKeyFromValue(CppOperators, s)
@@ -261,7 +261,7 @@ def getOperatorFromItaniumABI(s: Union[str, CppOperators]):
         case CppOperators.ARROW_STAR: return "->*"
         case CppOperators.CONVERSION: raise Exception("Conversion operator not yet supported")
         case CppOperators.FUNCTION_POINTER: raise Exception("Function Pointer operator not yet supported")
-        case _: raise TypeError(f"Invalid Itanium ABI value: {s}")
+        case _: raise KeyError(f"Invalid Itanium ABI value: {s}")
 def getNamespaceFromItaniumABI(s: Union[str, CppStandardNamespaces]) -> list[str]:
     if isinstance(s, str):
         senum = getEnumKeyFromValue(CppStandardNamespaces, s)
@@ -288,7 +288,7 @@ def getCompoundTypeFromItaniumABI(s: Union[str, CppCompoundTypes]):
         case CppCompoundTypes.COMPLEX: return "COMPLEX"
         case CppCompoundTypes.IMAGINARY: return "i"
         case CppCompoundTypes.POINTER_TO_MEMBER: return "->*"
-        case _: raise TypeError(f"Invalid Itanium ABI value: {s}")
+        case _: raise KeyError(f"Invalid Itanium ABI value: {s}")
 def getSpecialFormFromItaniumABI(s: Union[str, CppSpecialForms]):
     if isinstance(s, str):
         se = getEnumKeyFromValue(CppSpecialForms, s)
@@ -299,11 +299,114 @@ def getSpecialFormFromItaniumABI(s: Union[str, CppSpecialForms]):
         case CppSpecialForms.ARRAY_TYPE: return
         case CppSpecialForms.TEMPLATE_PARAM: return
         case CppSpecialForms.SUBSTITUTION: return
-        case _: raise TypeError(f"Invalid Itanium ABI value: {s}")
+        case _: raise KeyError(f"Invalid Itanium ABI value: {s}")
 def getEnumKeyFromValue(enum, value: Any):
     for k, v in enum.__members__.items():
         # print(k, v.value)
         if v.value == value:
             # print(v)
             return v
-    raise ValueError(f"{value} not found in {enum}!")
+    raise KeyError(f"{value} not found in {enum}!")
+itanium_symbols = {
+    # Compound Types (CppCompoundTypes)
+    'P': '*',                     # T* (pointer to T)
+    'R': '&',           # T& (reference to T)
+    'O': '&&',           # T&& (rvalue reference to T)
+    'C': '_Complex',             # complex T (from C++)
+    'G': '_Imaginary',           # imaginary T (from C++)
+    'M': '::*',          # T X::* (pointer to member of class X)
+
+    # Name Prefixes (CppNamePrefixes)
+    'L': 'local name (block-scope)',   # e.g., lambda local variable
+    'Z': '\00',
+    'N': '\01',                # e.g., namespaces or nested classes
+
+    # Operators (CppOperators)
+    'nw': 'operator new',
+    'na': 'operator new[]',
+    'dl': 'operator delete',
+    'da': 'operator delete[]',
+    'ps': 'operator+',
+    'ng': 'operator-',
+    'de': 'operator*',
+    'ad': 'operator&',
+    'co': 'operator~',
+    'pp': 'operator++',
+    'mm': 'operator--',
+    'pl': 'operator+',
+    'mi': 'operator-',
+    'ml': 'operator*',
+    'dv': 'operator/',
+    'rm': 'operator%',
+    'an': 'operator&',
+    'or': 'operator|',
+    'eo': 'operator^',
+    'aS': 'operator=',
+    'pL': 'operator+=',
+    'mI': 'operator-=',
+    'mL': 'operator*=',
+    'dV': 'operator/=',
+    'rM': 'operator%=',
+    'aN': 'operator&=',
+    'oR': 'operator|=',
+    'eO': 'operator^=',
+    'ls': 'operator<<',
+    'rs': 'operator>>',
+    'lS': 'operator<<=',
+    'rS': 'operator>>=',
+    'eq': 'operator==',
+    'ne': 'operator!=',
+    'lt': 'operator<',
+    'gt': 'operator>',
+    'le': 'operator<=',
+    'ge': 'operator>=',
+    'cl': 'operator()',
+    'ix': 'operator[]',
+    'pt': 'operator->',
+    'pm': 'operator->*',
+    'cv': 'operator ',
+
+    # Type Qualifiers (CppQualifiers)
+    'K': 'const',
+    'V': 'volatile',
+    'r': '__restrict',
+
+    # Special Forms (CppSpecialForms)
+    'F': '\03',        # e.g., F_iE = function taking int
+    'E': '\04',
+    'A': 'array type',
+    'T': '\05',
+    'S': '\06',
+
+    # Standard Namespaces (CppStandardNamespaces)
+    'St': 'std',
+    'Sa': 'std::allocator',
+    'Sb': 'std::basic_string',
+    'Ss': 'std::string',
+    'Si': 'std::istream',
+    'So': 'std::ostream',
+    'Sd': 'std::iostream',
+
+    # Built-in Types (CppTypes)
+    'v': 'void',
+    'w': 'wchar_t',
+    'b': 'bool',
+    'c': 'char',
+    'a': 'signed char',
+    'h': 'unsigned char',
+    's': 'short',
+    't': 'unsigned short',
+    'i': 'int',
+    'j': 'unsigned int',
+    'l': 'long',
+    'm': 'unsigned long',
+    'x': 'long long',
+    'y': 'unsigned long long',
+    'n': '__int128',
+    'o': 'unsigned __int128',
+    'f': 'float',
+    'd': 'double',
+    'e': 'long double',
+    'g': '__float128',
+    'z': '...'
+}
