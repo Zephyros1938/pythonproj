@@ -5,7 +5,7 @@ int main() {
   return 0;
 }
 
-void test(int x) { std::cout << "Test:" << x << std::endl; }
+// void test(const int *x) { std::cout << "Test:" << x << std::endl; }
 
 class TestClass22 {
 public:

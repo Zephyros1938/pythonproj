@@ -81,8 +81,6 @@ class Mesh:
 
         glBindVertexArray(0)
 
-assimp = getlib("assimp")
-
 @dataclass
 class Model:
     textures_loaded: list[Texture]

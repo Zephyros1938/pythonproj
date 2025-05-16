@@ -170,6 +170,7 @@ def __set_lib_contents(library: Any, libName: str, funcs: list[Union[__cdll_func
             for (k, v) in enumValues.items():
                 en += f"{k}={v},"
             en = f"{en[:-1]}}};"
+
             ffi.cdef(en)
             enum_values_storage[f.enumName] = enumValues
             if debugInternals: print(f"[LIB INFO]    Enum: '{en}'")
@@ -189,13 +190,19 @@ def __load_library(libname: str) -> Any:
     try:
         lib = ffi.dlopen(lib_path)
         __LibraryStorage._addLibrary(libname, lib)
+        from .demangle import getMangledABI
+        from cxxfilt import demangle
+        f = {k: "int " + demangle(v) + ";" for k, v in getMangledABI(lib_path).items() if not demangle(v).startswith("std")}
+        for k, v in f.items():
+            print(k, v)
+            # ffi.cdef(v)
         return lib
     except Exception as e:
         raise Exception(f"[LIB ERROR] Failed to load library {libname}: {e}")
 
 
 
-libs: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = loadPyFFI("./test.pyffi", False)
+libs: dict[str, list[Union[__cdll_function_def, _cdll_enum]]] = loadPyFFI("./libs.pyffi", False)
 
 def init(debugLibInternals: bool = False, debug: bool = False):
     """Initializes the library loader; call this before any other imports."""

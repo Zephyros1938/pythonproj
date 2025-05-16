@@ -307,6 +307,60 @@ def getEnumKeyFromValue(enum, value: Any):
             # print(v)
             return v
     raise KeyError(f"{value} not found in {enum}!")
+itanium_st = {
+    'St': 'std',
+    'Sa': 'std::allocator',
+    'Sb': 'std::basic_string',
+    'Ss': 'std::string',
+    'Si': 'std::istream',
+    'So': 'std::ostream',
+    'Sd': 'std::iostream'
+}
+itanium_op = {
+    'nw': 'operator new',
+    'na': 'operator new[]',
+    'dl': 'operator delete',
+    'da': 'operator delete[]',
+    'ps': 'operator+',
+    'ng': 'operator-',
+    'de': 'operator*',
+    'ad': 'operator&',
+    'co': 'operator~',
+    'pp': 'operator++',
+    'mm': 'operator--',
+    'pl': 'operator+',
+    'mi': 'operator-',
+    'ml': 'operator*',
+    'dv': 'operator/',
+    'rm': 'operator%',
+    'an': 'operator&',
+    'or': 'operator|',
+    'eo': 'operator^',
+    'aS': 'operator=',
+    'pL': 'operator+=',
+    'mI': 'operator-=',
+    'mL': 'operator*=',
+    'dV': 'operator/=',
+    'rM': 'operator%=',
+    'aN': 'operator&=',
+    'oR': 'operator|=',
+    'eO': 'operator^=',
+    'ls': 'operator<<',
+    'rs': 'operator>>',
+    'lS': 'operator<<=',
+    'rS': 'operator>>=',
+    'eq': 'operator==',
+    'ne': 'operator!=',
+    'lt': 'operator<',
+    'gt': 'operator>',
+    'le': 'operator<=',
+    'ge': 'operator>=',
+    'cl': 'operator()',
+    'ix': 'operator[]',
+    'pt': 'operator->',
+    'pm': 'operator->*',
+    'cv': 'operator '
+}
 itanium_symbols = {
     # Compound Types (CppCompoundTypes)
     'P': '*',                     # T* (pointer to T)
@@ -372,11 +426,11 @@ itanium_symbols = {
     'r': '__restrict',
 
     # Special Forms (CppSpecialForms)
-    'F': '\03',        # e.g., F_iE = function taking int
-    'E': '\04',
+    'F': '\02',        # e.g., F_iE = function taking int
+    'E': '\03',
     'A': 'array type',
-    'T': '\05',
-    'S': '\06',
+    'T': '\04',
+    'S': '\05',
 
     # Standard Namespaces (CppStandardNamespaces)
     'St': 'std',
@@ -409,4 +463,46 @@ itanium_symbols = {
     'e': 'long double',
     'g': '__float128',
     'z': '...'
+}
+itanium_symbols_special = {
+    '\00': '',
+    '\01': '',
+    '\02': '',
+    '\03': '',
+    '\04': '',
+    '\05': ''
+}
+itanium_types = {
+    'v': 'void',
+    'w': 'wchar_t',
+    'b': 'bool',
+    'c': 'char',
+    'a': 'signed char',
+    'h': 'unsigned char',
+    's': 'short',
+    't': 'unsigned short',
+    'i': 'int',
+    'j': 'unsigned int',
+    'l': 'long',
+    'm': 'unsigned long',
+    'x': 'long long',
+    'y': 'unsigned long long',
+    'n': '__int128',
+    'o': 'unsigned __int128',
+    'f': 'float',
+    'd': 'double',
+    'e': 'long double',
+    'g': '__float128',
+    'z': '...'
+}
+itanium_type_modifiers = {
+    'K': 'const',
+    'V': 'volatile',
+    'r': 'restrict',
+    'P': '*',                     # T* (pointer to T)
+    'R': '&',           # T& (reference to T)
+    'O': '&&',           # T&& (rvalue reference to T)
+    'C': '_Complex',             # complex T (from C++)
+    'G': '_Imaginary',           # imaginary T (from C++)
+    'M': '::*',          # T X::* (pointer to member of class X)
 }

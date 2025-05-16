@@ -87,7 +87,7 @@ class Camera3D:
 
     def process_scroll(self, yoffset: float):
         self.zoom -= yoffset
-        self.zoom = max(min(self.zoom, 45.0), 1.0)
+        self.zoom = max(min(self.zoom, 89.0), 1.0)
 
     def update_vectors(self):
         front = vec3(
