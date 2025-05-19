@@ -56,19 +56,22 @@ class Texture:
         )
 
         try:
-            width_ptr = ffi.new("int*", 0)
-            height_ptr = ffi.new("int*", 0)
-            nrChannels_ptr = ffi.new("int*", 0)
+            width_ptr = ffi.new("int*")
+            height_ptr = ffi.new("int*")
+            nrChannels_ptr = ffi.new("int*")
 
             stb_image.stbi_set_flip_vertically_on_load(1 if flip else 0)
 
+            # print(os.path.abspath(path).encode("utf-8"))
+
             data = stb_image.stbi_load(
-                os.path.abspath(path).encode("utf-8"),
+                cstr(os.path.abspath(path)),
                 width_ptr,
                 height_ptr,
                 nrChannels_ptr,
                 0
             )
+            info(1, cstr("Got image"))
 
             width = width_ptr[0]
             height = height_ptr[0]
@@ -91,14 +94,9 @@ class Texture:
 
             info(3, cstr(f"Image size: {width}x{height}, Channels: {nrChannels}, Total size: {size}"))
 
-            dat = []
-            datIndex = 0
-            while True:
-                try:
-                    dat[datIndex] = data[datIndex]
-                    datIndex += 1
-                except:
-                    break
+            dat = ffi.unpack(data, size)
+
+            print(ffi.unpack(data, 100))
 
             glTexImage2D(
                 GL_TEXTURE_2D,
