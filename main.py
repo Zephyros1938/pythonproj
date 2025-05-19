@@ -217,12 +217,14 @@ class Skybox:
         GL.glBindVertexArray(0)
         self.vao = vao
     def draw(self):
+        GL.glDepthMask(GL.GL_FALSE)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.image.id)
         self.shader.activate()
         self.shader.setMat4fv("model", self.model)
         GL.glBindVertexArray(self.vao)
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, 36)
         GL.glUseProgram(0)
+        GL.glDepthMask(GL.GL_TRUE)
     def update(self, dt: float):
         drag = 1  # drag coefficient (adjust as needed)
 
@@ -330,6 +332,7 @@ def main():
         sb.update(DELTATIME)
         GL.glClear(GL.GL_DEPTH_BUFFER_BIT) # clear the depth buffer (3d)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT) # clear the color buffer
+
 
         sb.shader.activate()
         sb.shader.setMat4fv("projection", CAMERA.getProjectionMatrix())
