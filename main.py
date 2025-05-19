@@ -76,7 +76,7 @@ def main():
     GLFW.set_scroll_callback(window.handle, scroll_callback)
 
     SHADERS["main"], svao = ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 3).fromVerticeModel(verticeModel, [(0, 3), (1, 3)])
-    sb = Skybox(vec3(0), vec3(0), "resources/textures/skyboxes/grassy1.png")
+    sb = Skybox(vec3(0), vec3(0), "resources/textures/skyboxes/sky1.png")
     objects.append(sb)
     objects.append(o)
 

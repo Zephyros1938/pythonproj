@@ -4,7 +4,8 @@ from OpenGL.GL import GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER, GL_LINEAR, G
 from OpenGL.GL import glGenTextures, glBindTexture, glTexParameteri, glTexImage2D, glGenerateMipmap
 from OpenGL.GL import GL_RED, GL_RG, GL_RGB, GL_RGBA, GL_UNSIGNED_BYTE, GLuint
 
-from ctypes import pointer, c_void_p, cast as c_cast
+from ctypes import pointer
+import time
 import os
 
 from lib import getlib, cstr, ffi
@@ -71,7 +72,8 @@ class Texture:
                 nrChannels_ptr,
                 0
             )
-            info(1, cstr("Got image"))
+            info(1, cstr(f"Got image: {path}"))
+            print(os.path.exists(path), path)
 
             width = width_ptr[0]
             height = height_ptr[0]
@@ -94,10 +96,12 @@ class Texture:
 
             info(3, cstr(f"Image size: {width}x{height}, Channels: {nrChannels}, Total size: {size}"))
 
+            dataAddress = int(ffi.cast("intptr_t", data))
+            print(dataAddress)
+
             dat = ffi.unpack(data, size)
 
-            print(ffi.unpack(data, 100))
-
+            startProcessTime = time.time()
             glTexImage2D(
                 GL_TEXTURE_2D,
                 0,
@@ -109,7 +113,7 @@ class Texture:
                 GL_UNSIGNED_BYTE,
                 dat
             )
-            info(2, cstr("Loaded image TexImage2D"))
+            info(2, cstr(f"Loaded image TexImage2D in {time.time()-startProcessTime:.4f}s"))
             glGenerateMipmap(GL_TEXTURE_2D)
             info(2, cstr("Generated Mipmap"))
 
