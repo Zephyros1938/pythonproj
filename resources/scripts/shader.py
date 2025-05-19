@@ -153,7 +153,7 @@ class ShaderBuilder:
         if self.attributeIndex != self.vertexSize:
             print(f"[WARN] Attribute index {self.attributeIndex} does not equal Vertex Size {self.vertexSize}!\r\n\tDid you set your attributes correctly?")
         return (self.shader, self.VAO)
-    def fromVerticeModel(self, model: VerticeModel, indexes: list[tuple[int, int]], dtypes: list[np.float32]):
+    def fromVerticeModel(self, model: VerticeModel, indexes: list[tuple[int, int]]):
         if len(model.verticeMeshes.items()) != len(indexes):
             raise Exception(f"model has {len(model.verticeMeshes.items())} VerticeMeshes but got indexes with length {len(indexes)}!")
         items = list(model.verticeMeshes.items())
@@ -163,7 +163,7 @@ class ShaderBuilder:
             vertices = items[n][1]
             attribute = indexes[n]
             info(2, cstr(f"Setting data for VerticeMesh \"{name}\" with attribute indexes {attribute}"))
-            self = self.genVBO(name).bindVBO(name).VBOdata(vertices.vertices, dtype=dtypes[n]).setAttribute(attribute[0], attribute[1])
+            self = self.genVBO(name).bindVBO(name).VBOdata(vertices.vertices, dtype=np.float32).setAttribute(attribute[0], attribute[1])
             info(3, cstr(f"Successfully set data for VerticeMesh \"{name}\""))
         info(2, cstr("Successfully loaded model"))
         return self.pack()
