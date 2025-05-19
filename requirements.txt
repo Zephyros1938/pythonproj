@@ -5,3 +5,4 @@ pyglm
 pyassimp
 logger
 cffi
+cxxfilt

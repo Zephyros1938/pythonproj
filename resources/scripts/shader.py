@@ -1,6 +1,7 @@
 import OpenGL.GL as GL
 from pyglm.glm import vec4, mat4, value_ptr, vec3, vec2
 import ctypes
+from typing import Union
 import numpy as np
 
 from lib import getlib, cstr
@@ -110,29 +111,49 @@ class ShaderBuilder:
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.VBOs[vboName])
         self.attributeIndex = 0
         return self
-    def VBOdata(self, data: list[float]):
+    def VBOdata(self, data: list, dtype, bufferType=GL.GL_ARRAY_BUFFER):
+        array = np.array(data, dtype=dtype)
+        GL.glBindVertexArray(self.VAO)
         GL.glBufferData(
-            GL.GL_ARRAY_BUFFER,
-            ctypes.sizeof(ctypes.c_float) * len(data),
-            np.array(data, dtype=np.float32),
+            bufferType,
+            array.nbytes,
+            array,
             GL.GL_STATIC_DRAW
         )
-        return self
-    def setAttribute(self, loc: int, dataSize: int):
-        GL.glBindVertexArray(self.VAO)
-        # info(1, cstr(attribute set at [{self.attributeIndex}]")
-        GL.glVertexAttribPointer(loc, dataSize, GL.GL_FLOAT, GL.GL_FALSE, self.vertexSize * ctypes.sizeof(ctypes.c_float), ctypes.c_void_p(self.attributeIndex * ctypes.sizeof(ctypes.c_float)))
-        GL.glEnableVertexAttribArray(loc)
-        self.attributeIndex += dataSize
         GL.glBindVertexArray(0)
         return self
+
+    def setAttribute(
+            self,
+            loc: int,
+            dataSize: int,
+            dataType=GL.GL_FLOAT,
+            normalized=GL.GL_FALSE
+        ):
+            data_type_size = self._sizeof_gl_type(dataType)
+            stride = self.vertexSize * data_type_size
+            offset = self.attributeIndex * data_type_size
+
+            GL.glBindVertexArray(self.VAO)
+            GL.glVertexAttribPointer(
+                loc,
+                dataSize,
+                dataType,
+                normalized,
+                stride,
+                ctypes.c_void_p(offset)
+            )
+            GL.glEnableVertexAttribArray(loc)
+            self.attributeIndex += dataSize
+            GL.glBindVertexArray(0)
+            return self
     def pack(self):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         if self.attributeIndex != self.vertexSize:
             print(f"[WARN] Attribute index {self.attributeIndex} does not equal Vertex Size {self.vertexSize}!\r\n\tDid you set your attributes correctly?")
         return (self.shader, self.VAO)
-    def fromVerticeModel(self, model: VerticeModel, indexes: list[tuple[int, int]]):
+    def fromVerticeModel(self, model: VerticeModel, indexes: list[tuple[int, int]], dtypes: list[np.float32]):
         if len(model.verticeMeshes.items()) != len(indexes):
             raise Exception(f"model has {len(model.verticeMeshes.items())} VerticeMeshes but got indexes with length {len(indexes)}!")
         items = list(model.verticeMeshes.items())
@@ -142,10 +163,38 @@ class ShaderBuilder:
             vertices = items[n][1]
             attribute = indexes[n]
             info(2, cstr(f"Setting data for VerticeMesh \"{name}\" with attribute indexes {attribute}"))
-            self = self.genVBO(name).bindVBO(name).VBOdata(vertices.vertices).setAttribute(attribute[0], attribute[1])
+            self = self.genVBO(name).bindVBO(name).VBOdata(vertices.vertices, dtype=dtypes[n]).setAttribute(attribute[0], attribute[1])
             info(3, cstr(f"Successfully set data for VerticeMesh \"{name}\""))
         info(2, cstr("Successfully loaded model"))
         return self.pack()
+    def _sizeof_gl_type(self, gl_type) -> int:
+        if gl_type == GL.GL_FLOAT:
+            return ctypes.sizeof(ctypes.c_float)
+        elif gl_type == GL.GL_INT:
+            return ctypes.sizeof(ctypes.c_int)
+        elif gl_type == GL.GL_UNSIGNED_INT:
+            return ctypes.sizeof(ctypes.c_uint)
+        elif gl_type == GL.GL_SHORT:
+            return ctypes.sizeof(ctypes.c_short)
+        elif gl_type == GL.GL_UNSIGNED_SHORT:
+            return ctypes.sizeof(ctypes.c_ushort)
+        elif gl_type == GL.GL_BYTE:
+            return ctypes.sizeof(ctypes.c_byte)
+        elif gl_type == GL.GL_UNSIGNED_BYTE:
+            return ctypes.sizeof(ctypes.c_ubyte)
+        else:
+            raise ValueError(f"Unsupported GL type: {gl_type}")
+    def _infer_gl_type(self, dtype):
+        if dtype == np.float32:
+            return GL.GL_FLOAT
+        elif dtype == np.int32:
+            return GL.GL_INT
+        elif dtype == np.uint32:
+            return GL.GL_UNSIGNED_INT
+        # Add more as needed
+        else:
+            raise ValueError(f"Unsupported NumPy dtype: {dtype}")
+
 
 def _checkShaderCompile(shader: None):
     success = GL.glGetShaderiv(shader, GL.GL_COMPILE_STATUS)

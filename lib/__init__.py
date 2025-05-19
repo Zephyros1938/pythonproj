@@ -157,7 +157,7 @@ def __set_lib_contents(library: Any, libName: str, funcs: list[Union[__cdll_func
                 if str(e).startswith("multiple declarations of function"):
                     raise Exception(f"Function {libName}::{f.name} was redefined!")
                 else:
-                    raise Exception(str(e))
+                    raise FFIError(str(e))
         elif isinstance(f, _cdll_enum):
             if debug: print(f"[LIB INFO]   Setting enum {libName}::{f.enumName}")
             en = f"enum {f.enumName} {{"
@@ -166,7 +166,7 @@ def __set_lib_contents(library: Any, libName: str, funcs: list[Union[__cdll_func
             elif isinstance(f.enumValues, dict):
                 enumValues = f.enumValues
             else:
-                raise ValueError(f"f.enumValues was {f.enumValues}, expected list/dict.")
+                raise TypeError(f"f.enumValues was {f.enumValues}, expected list/dict.")
             for (k, v) in enumValues.items():
                 en += f"{k}={v},"
             en = f"{en[:-1]}}};"
@@ -190,12 +190,12 @@ def __load_library(libname: str) -> Any:
     try:
         lib = ffi.dlopen(lib_path)
         __LibraryStorage._addLibrary(libname, lib)
-        from .demangle import getMangledABI
-        from cxxfilt import demangle
-        f = {k: "int " + demangle(v) + ";" for k, v in getMangledABI(lib_path).items() if not demangle(v).startswith("std")}
-        for k, v in f.items():
-            print(k, v)
-            # ffi.cdef(v)
+        # from .demangle import getMangledABI
+        # from cxxfilt import demangle
+        # f = {k: "int " + demangle(v) + ";" for k, v in getMangledABI(lib_path).items() if not demangle(v).startswith("std")}
+        # for k, v in f.items():
+        #     print(k, v)
+        #     # ffi.cdef(v)
         return lib
     except Exception as e:
         raise Exception(f"[LIB ERROR] Failed to load library {libname}: {e}")

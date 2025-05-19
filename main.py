@@ -10,8 +10,9 @@ print(lib.getEnum("assimp", "aiPostProcessSteps").aiProcess_CalcTangentSpace.val
 import OpenGL.GL as GL
 import glfw as GLFW
 import threading
+import numpy as np
 
-from pyglm.glm import translate, rotate, scale, ivec2, mat4, vec3, length, sin,cos, radians, pi as PI
+from pyglm.glm import translate, rotate, scale, ivec2, mat4, vec2, vec3, vec4, length, sin,cos, radians, pi as PI, exp, distance
 from resources.scripts.shader import Shader, ShaderBuilder
 from resources.scripts.verticeMesh import VerticeMesh
 from resources.scripts.verticeModel import VerticeModel
@@ -37,64 +38,125 @@ CAMERA = Camera3D(move_speed=20, far=1000)
 # XYZ, RGB
 
 vertices = VerticeMesh([
-    -2, -2, 0,
-    2, -2, 0,
-    2, 2, 0,
+    0.0, 0.5, 0.0,
+    -0.5, 0.0, 0.5,
+    0.5, 0.0, 0.5,
 
-    -2, -2, 0,
-    2, 2, 0,
-    -2, 2, 0
+    0.0, 0.5, 0.0,
+    -0.5, 0.0, -0.5,
+    -0.5, 0.0, 0.5,
+
+    0.0, 0.5, 0.0,
+    0.5, 0.0, 0.5,
+    0.5, 0.0, -0.5,
+
+    0.0, 0.5, 0.0,
+    0.5, 0.0, -0.5,
+    -0.5, 0.0, -0.5,
+
+    0.0, -0.5, 0.0,
+    0.5, 0.0, 0.5,
+    -0.5, 0.0, 0.5,
+
+    0.0, -0.5, 0.0,
+    -0.5, 0.0, 0.5,
+    -0.5, 0.0, -0.5,
+
+    0.0, -0.5, 0.0,
+    0.5, 0.0, -0.5,
+    0.5, 0.0, 0.5,
+
+    0.0, -0.5, 0.0,
+    -0.5, 0.0, -0.5,
+    0.5, 0.0, -0.5,
 ])
 colors = VerticeMesh([0.0 if i % 9 in [1, 2, 3, 5, 6, 7] else 1.0 for i in range(len(vertices.vertices))])
 
 verticeModel = VerticeModel({"vertices": vertices, "colors": colors})
 
+
+
 class Obj:
-    vm: VerticeModel
+    vm: 'VerticeModel'
     pos: vec3
     rot: vec3
     posVel: vec3
     rotVel: vec3
     model: mat4
-    def __init__(self, vm, pos, rot):
+
+    def __init__(self, vm: VerticeModel, pos: vec3, rot: vec3):
         self.vm = vm
         self.pos = pos
         self.rot = rot
-        self.posVel = vec3(0)
-        self.rotVel = vec3(0)
+        self.posVel = vec3(0.0)
+        self.rotVel = vec3(0.0)
         self.model = mat4(1.0)
 
     def update(self, dt: float):
-        damping = 1.0 - (dt * 5.0)
-        self.model[3][0] += self.posVel.x * dt
-        self.model[3][1] += self.posVel.y * dt
-        self.model[3][2] += self.posVel.z * dt
-        self.rot += self.rotVel * dt
-        self.posVel *= damping
-        self.rotVel *= damping
+        drag = 1  # drag coefficient (adjust as needed)
 
-    def draw(self, shader:Shader, vao: int):
-        shader.activate()
-        shader.setMat4fv("model", translate(self.model, self.pos))
-        self.vm.draw(shader, vao)
+        # Update position and rotation from velocity
+        self.pos += self.posVel * dt
+        self.rot += self.rotVel * dt
+
+        # Apply exponential damping
+        self.posVel *= exp(-drag * dt)
+        self.rotVel *= exp(-drag * dt)
+
+        # Threshold to prevent float drift
+        if length(self.posVel) < 1e-4:
+            self.posVel = vec3(0.0)
+        if length(self.rotVel) < 1e-4:
+            self.rotVel = vec3(0.0)
+
+        # Update model matrix
+        self.__update_model()
+
+    def __update_model(self):
+        self.model = mat4(1.0)
+        self.model = translate(self.model, self.pos)
+        self.__rotate()
 
     def __rotate(self):
         rx = radians(self.rot.x)
         ry = radians(self.rot.y)
         rz = radians(self.rot.z)
-        #x
-        self.model[1][1] *= cos(rx)
-        self.model[1][2] *= -sin(rx)
-        self.model[2][1] *= sin(rx)
-        self.model[2][2] *= cos(rx)
+
+        # Apply rotation around X, Y, Z in order
+        self.model = rotate(self.model, rx, vec3(1.0, 0.0, 0.0))
+        self.model = rotate(self.model, ry, vec3(0.0, 1.0, 0.0))
+        self.model = rotate(self.model, rz, vec3(0.0, 0.0, 1.0))
+
+    def draw(self, shader: Shader, vao: int):
+        shader.activate()
+        shader.setMat4fv("model", self.model)
+        self.vm.draw(shader, vao)
+
+class Skybox:
+    vertices: list[float]
+    indices: list[str]
+    showing: bool = True
+    shader: Shader
+    vao: int
+    rot: vec3
+    model: mat4
+    def __init__(self, rot:vec3, imagePath: str):
+        self.rot = rot
+
+        self.model = scale(mat4(1),vec3(10))
+    def draw(self):
+        self.shader.activate()
+        GL.glBindVertexArray(self.vao)
+        GL.glDrawElements(self.shader.DRAWMODE, 0, 6)
+        GL.glBindVertexArray(0)
+        GL.glUseProgram(0)
+
 
 o = Obj(verticeModel, vec3(0), vec3(0))
 
+Objs = []
 
 def main():
-    print(rotate(mat4(1), radians(90), vec3(1,0,0)))
-    print(rotate(mat4(1), radians(90), vec3(0,1,0)))
-    print(rotate(mat4(1), radians(90), vec3(0,0,1)))
     global FIRSTMOUSE, model
 
     window = Window( viewport=(VIEWPORT.x, VIEWPORT.y))
@@ -105,10 +167,11 @@ def main():
     # set callbacks
     GLFW.set_key_callback(window.handle, key_callback)
     GLFW.set_framebuffer_size_callback(window.handle, framebuffer_resize_callback)
-    # GLFW.set_cursor_pos_callback(window.handle, cursor_pos_callback)
+    GLFW.set_cursor_pos_callback(window.handle, cursor_pos_callback)
     GLFW.set_scroll_callback(window.handle, scroll_callback)
 
-    SHADERS["main"], svao = ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 3).fromVerticeModel(verticeModel, [(0, 3), (1, 3)])
+    SHADERS["main"], svao = ShaderBuilder("resources/shaders/test.vert", "resources/shaders/test.frag", 3).fromVerticeModel(verticeModel, [(0, 3), (1, 3)], [np.float32, np.float32])
+    sb = Skybox(vec3(0), "")
 
     GL.glClearColor(0.0, 0.0, 0.0, 0.0)
 
@@ -142,10 +205,22 @@ def main():
     fps_notify_thread = threading.Thread(target=fps_notify, daemon=True)
     fps_notify_thread.start()
 
+    import random
+
     # main loop
     while not window.should_close():
         update_deltatime()
         o.update(DELTATIME)
+        p = o
+        for x in Objs:
+            x.update(DELTATIME)
+            dir: vec2 = (x.pos.xy - p.pos.xy);
+            dist = distance(p.pos.xy, x.pos.xy);
+            # if dist < .1:
+            #     x.pos.xy = vec2(random.uniform(p.pos.x - 100,p.pos.x + 100),random.uniform(p.pos.y-100,p.pos.y+100))
+            x.posVel.xy -= dir * dist * DELTATIME;
+            p = x
+        # CAMERA.position.xy = o.pos.xy
         process_input(window.handle)
         GL.glClear(GL.GL_DEPTH_BUFFER_BIT) # clear the depth buffer (3d)
         GL.glClear(GL.GL_COLOR_BUFFER_BIT) # clear the color buffer
@@ -156,7 +231,10 @@ def main():
         SHADERS["main"].setMat4fv("view", CAMERA.getViewMatrix())
         SHADERS["main"].setMat4fv("projection", CAMERA.getProjectionMatrix())
 
-        o.draw(SHADERS["main"], svao)
+
+        # o.draw(SHADERS["main"], svao)
+        for x in Objs:
+            x.draw(SHADERS["main"], svao)
 
         # Draw window
         window.swap_buffers()
@@ -193,14 +271,28 @@ def process_input(window: GLFW._GLFWwindow):
         CAMERA.process_keyboard(2, DELTATIME)
     if getKeyPressed(window, GLFW.KEY_RIGHT):
         CAMERA.process_keyboard(3, DELTATIME)
+    if getKeyPressed(window, GLFW.KEY_SPACE):
+        CAMERA.process_keyboard(7, DELTATIME)
+    if getKeyPressed(window, GLFW.KEY_LEFT_CONTROL):
+        CAMERA.process_keyboard(6, DELTATIME)
     if getKeyPressed(window, GLFW.KEY_A):
-        o.posVel.x -= 25 * DELTATIME
+        o.posVel.x -= 50 * DELTATIME
+        o.rotVel.y += 180 * DELTATIME
+
     if getKeyPressed(window, GLFW.KEY_D):
-        o.posVel.x += 25 * DELTATIME
+        o.posVel.x += 50 * DELTATIME
+        o.rotVel.y -= 180 * DELTATIME
+
     if getKeyPressed(window, GLFW.KEY_W):
-        o.posVel.y += 25 * DELTATIME
+        o.posVel.y += 50 * DELTATIME
+        o.rotVel.x -= 180 * DELTATIME
+
     if getKeyPressed(window, GLFW.KEY_S):
-        o.posVel.y -= 25 * DELTATIME
+        o.posVel.y -= 50 * DELTATIME
+        o.rotVel.x += 180 * DELTATIME
+    if getKeyPressed(window, GLFW.KEY_E):
+        Objs.append(Obj(verticeModel, vec3(0,0,-1*len(Objs)), vec3(0)))
+
 
 
 def cursor_pos_callback(window: GLFW._GLFWwindow, x:int, y:int):
