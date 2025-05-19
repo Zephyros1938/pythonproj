@@ -3,7 +3,7 @@ from pyglm.glm import cos, mat4, perspective, sin, cross, normalize, vec3, radia
 class Camera3D:
     def __init__(
         self,
-        position = vec3(0.0, 0.0, 3.0),
+        position = vec3(0.0, 0.0, 0.0),
         world_up= vec3(0.0, 1.0, 0.0),
         yaw = -90.0,
         pitch = 0.0,

@@ -28,47 +28,25 @@ FIRSTMOUSE: bool  = True
 LAST_X : float = 0
 LAST_Y : float = 0
 
-model = mat4(1.0)
-
 CAMERA = Camera3D(move_speed=20, far=1000)
 
-# triangle color points for drawing later
-# XYZ, RGB
-
 vertices = VerticeMesh([
-    0.0, 0.5, 0.0,
-    -0.5, 0.0, 0.5,
-    0.5, 0.0, 0.5,
+    -10,-2, 0,
+     10,-2, 0,
+     10, 0, 0,
+     -10,-2, 0,
+     10, 0, 0,
+     -10, 0, 0,
 
-    0.0, 0.5, 0.0,
-    -0.5, 0.0, -0.5,
-    -0.5, 0.0, 0.5,
-
-    0.0, 0.5, 0.0,
-    0.5, 0.0, 0.5,
-    0.5, 0.0, -0.5,
-
-    0.0, 0.5, 0.0,
-    0.5, 0.0, -0.5,
-    -0.5, 0.0, -0.5,
-
-    0.0, -0.5, 0.0,
-    0.5, 0.0, 0.5,
-    -0.5, 0.0, 0.5,
-
-    0.0, -0.5, 0.0,
-    -0.5, 0.0, 0.5,
-    -0.5, 0.0, -0.5,
-
-    0.0, -0.5, 0.0,
-    0.5, 0.0, -0.5,
-    0.5, 0.0, 0.5,
-
-    0.0, -0.5, 0.0,
-    -0.5, 0.0, -0.5,
-    0.5, 0.0, -0.5,
 ])
-colors = VerticeMesh([0.0 if i % 9 in [1, 2, 3, 5, 6, 7] else 1.0 for i in range(len(vertices.vertices))])
+colors = VerticeMesh([
+    1,0,0,
+    0,1,0,
+    0,0,1,
+    1,0,0,
+    0,1,0,
+    0,0,1
+])
 
 verticeModel = VerticeModel({"vertices": vertices, "colors": colors})
 
@@ -77,7 +55,7 @@ verticeModel = VerticeModel({"vertices": vertices, "colors": colors})
 
 
 
-o = VerticeModelObject(verticeModel, vec3(0), vec3(0))
+o = VerticeModelObject(verticeModel, vec3(0,0,-3), vec3(0))
 
 objects: list[Obj] = []
 
