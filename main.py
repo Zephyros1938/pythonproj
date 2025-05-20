@@ -30,7 +30,8 @@ class CoolWindow(GameWindow):
         self.canJump = True
 
     def update(self, deltatime: float):
-        self.objects[-3]["mover"].transform.position.y =  5 + (10 * (sin(2 * self._time.total)))
+        self.objects[-3]["mover"].transform.position.x =  60 + (5  * (cos(1 * self._time.total)))
+        self.objects[-3]["mover"].transform.position.y =  10 + (15 * (sin(1 * self._time.total)))
         for layer, objs in self.objects.items():
             lockedObjects = {
                 key: val
@@ -52,10 +53,9 @@ class CoolWindow(GameWindow):
                             print(f"{on} colide with {ln} at {dir}!")
                             obj.transform.position -= 1* mtv  # Apply MTV to resolve the collision
                             obj.posVel -= 5 * mtv
-                            if dir == AABBCollisionDirection.BOTTOM and not self.canJump:
-                                self.canJump = True
-                        # if dir == AABBCollisionDirection.NO_COLLIDE and self.canJump:
-                        #     self.canJump = False
+                        if dir == AABBCollisionDirection.BOTTOM and not self.canJump:
+                            self.canJump = True
+
 
             # Bound checking
             for obj in objs.values():
@@ -75,6 +75,7 @@ class CoolWindow(GameWindow):
             self.camera.process_keyboard(0, deltatime)
         if getKeyPressed(self.handle, GLFW.KEY_S):
             self.camera.process_keyboard(1, deltatime)
+
         # if getKeyPressed(self.handle, GLFW.KEY_A):
         #     self.camera.process_keyboard(2, deltatime)
         # if getKeyPressed(self.handle, GLFW.KEY_D):
@@ -95,7 +96,7 @@ class CoolWindow(GameWindow):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-        self.skybox = Skybox(vec3(0), vec3(0), "resources/textures/skyboxes/sky1.png")
+        self.skybox = Skybox(vec3(0), vec3(0), "resources/textures/skyboxes/mountain2.png")
         self.skybox.rotVel.y = 1
         block_gray = VerticeModel(
             {"vertices":
@@ -145,11 +146,11 @@ class CoolWindow(GameWindow):
                     ]
                 )
             })
-        self.objects[-3]["floor1"] = simpleRectangle(block_gray, pos=vec3(0,-5,0),scale=vec3(120,10,1))
-        self.objects[-3]["floor2"] = simpleRectangle(block_gray, pos=vec3(0,15,0),scale=vec3(120,10,1))
-        self.objects[-3]["wall1"] = simpleRectangle(block_gray, pos=vec3(-55,5,0),scale=vec3(10,30,1))
+        self.objects[-3]["floor1"] = simpleRectangle(block_gray, pos=vec3(0,-5,0),scale=vec3(100,10,1))
+        self.objects[-3]["floor2"] = simpleRectangle(block_gray, pos=vec3(0,15,0),scale=vec3(100,10,1))
+        self.objects[-3]["wall1"] = simpleRectangle(block_gray, pos=vec3(-45,5,0),scale=vec3(10,30,1))
         self.objects[-3]["wall2"] = simpleRectangle(block_gray, pos=vec3(75,5,0),scale=vec3(10,30,1))
-        self.objects[-3]["mover"] = simpleRectangle(block_gray, pos=vec3(65,10,0),scale=vec3(10,10,1))
+        self.objects[-3]["mover"] = simpleRectangle(block_gray, pos=vec3(55,20,0),scale=vec3(10,10,1))
         self.objects[-3]["player"] = simpleRectangle(player_vm, pos=vec3(0,2,0), locked=False)
         self.mouseHandler = MouseHandler()
         self.camera = Camera3D(move_speed=20, far=1000, position=vec3(0,0,15))
