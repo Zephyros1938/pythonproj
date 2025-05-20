@@ -64,7 +64,7 @@ class Texture:
 
             # print(os.path.abspath(path).encode("utf-8"))
 
-            print(cstr(os.path.abspath(path)))
+            # print(cstr(os.path.abspath(path)))
 
             data = stb_image.stbi_load(
                 cstr(os.path.abspath(path)),

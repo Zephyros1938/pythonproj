@@ -56,8 +56,9 @@ class Obj:
 class VerticeModelObject(Obj):
     vm: 'VerticeModel'
     flags: dict[str, Union[str, int, float, bool]]
-    def __init__(self, vm: VerticeModel, pos: vec3, rot: vec3, shaderBuilderInfo: tuple[ShaderBuilder, list[tuple[int, int]]], locked=False):
+    def __init__(self, vm: VerticeModel, pos: vec3, shaderBuilderInfo: tuple[ShaderBuilder, list[tuple[int, int]]], locked=False, rot: vec3= vec3(0), scale = vec3(1)):
         self.transform = Transform(pos, rot)
+        self.transform.scale = scale
         self.posVel = vec3(0.0)
         self.rotVel = vec3(0.0)
         self.vm = vm
@@ -77,8 +78,8 @@ class VerticeModelObject(Obj):
             self.posVel = vec3(0.0)
         if length(self.rotVel) < 1e-4:
             self.rotVel = vec3(0.0)
-        if self.posVel.y > 5:
-            self.posVel.y = 5
+        if self.posVel.y > 15:
+            self.posVel.y = 15
 
         self.transform.update_matrix()
     def draw(self):
@@ -182,3 +183,22 @@ class Skybox(Obj):
         GL.glDrawArrays(GL.GL_TRIANGLES, 0, 36)
         GL.glUseProgram(0)
         GL.glDepthMask(GL.GL_TRUE)
+
+def simpleRectangle(vm: VerticeModel, pos: vec3, rot:vec3 = vec3(0), scale:vec3 = vec3(1), shaderName: str = "test", locked: bool = True) -> VerticeModelObject:
+    return VerticeModelObject(
+        shaderBuilderInfo=(
+            ShaderBuilder(
+                f"resources/shaders/{shaderName}.vert",
+                f"resources/shaders/{shaderName}.frag",
+                2),
+            [
+                (0, 2),
+                (1, 3)
+            ]
+        ),
+        vm=vm,
+        locked=locked,
+        pos=pos,
+        rot=rot,
+        scale=scale
+    )

@@ -7,7 +7,7 @@
 
 enum LEVELS { ERROR = 0, WARN, INFO, DEBUG, TRACE };
 
-LEVELS TARGET_LEVEL = LEVELS::INFO; // info
+LEVELS TARGET_LEVEL = LEVELS::WARN; // info
 bool INITIALIZED = false;
 
 using namespace std;

@@ -1,19 +1,19 @@
 import lib
-from resources.scripts.physics.transform import Transform, getTransformAABBCollision
-lib.init(debug=False, debugLibInternals=False)
+from resources.scripts.physics.transform import getTransformAABBCollision
+lib.init(debug=True, debugLibInternals=True)
 logger = lib.getlib("logger")
-logger.init(lib.getEnumV("logger", "LEVELS", "INFO"))
+logger.init(lib.getEnumV("logger", "LEVELS", "ERROR"))
 
 import OpenGL.GL as GL
 import glfw as GLFW
 
-from pyglm.glm import vec3, sin
-from resources.scripts.shader import Shader, ShaderBuilder
+from pyglm.glm import vec3, sin, cos, tan
+from resources.scripts.shader import Shader
+from resources.scripts.glfwUtilities import getKeyPressed
 from resources.scripts.verticeMesh import VerticeMesh
 from resources.scripts.verticeModel import VerticeModel
 from resources.scripts.camera.camera3d import Camera3D
-from resources.scripts.glfwUtilities import getKeyPressed
-from resources.scripts.object import Obj, VerticeModelObject, Skybox
+from resources.scripts.object import Obj, Skybox, simpleRectangle
 from resources.scripts.window.mouseHandler import MouseHandler
 from resources.scripts.gameWindow import GameWindow, default_window_hints, WindowHints
 
@@ -29,8 +29,7 @@ class CoolWindow(GameWindow):
         self.shaders  : list[Shader] = []
 
     def update(self, deltatime: float):
-        self.objects[-1]["wall1"].transform.position.x = 2 * (sin(self._time.total))
-        self.objects[-3]["mover"].transform.position.x = 3 + (10 * (sin(2 * self._time.total)))
+        self.objects[-3]["mover"].transform.position.y =  5 + (10 * (sin(2 * self._time.total)))
         for layer, objs in self.objects.items():
             lockedObjects = {
                 key: val
@@ -39,9 +38,9 @@ class CoolWindow(GameWindow):
             }
 
             # Apply physics (gravity, motion)
-            for obj in objs.values():
+            for name, obj in objs.items():
                 if not obj.flags.get("locked"):
-                    obj.posVel.y -= 0.1
+                    obj.posVel.y -= 0.25
 
             # Resolve collisions
             for on, obj in objs.items():
@@ -66,18 +65,20 @@ class CoolWindow(GameWindow):
 
         # camera movement
 
+
         if getKeyPressed(self.handle, GLFW.KEY_W):
             self.camera.process_keyboard(0, deltatime)
         if getKeyPressed(self.handle, GLFW.KEY_S):
             self.camera.process_keyboard(1, deltatime)
-        if getKeyPressed(self.handle, GLFW.KEY_A):
-            self.camera.process_keyboard(2, deltatime)
-        if getKeyPressed(self.handle, GLFW.KEY_D):
-            self.camera.process_keyboard(3, deltatime)
-        if getKeyPressed(self.handle, GLFW.KEY_SPACE):
-            self.camera.process_keyboard(7, deltatime)
-        if getKeyPressed(self.handle, GLFW.KEY_LEFT_CONTROL):
-            self.camera.process_keyboard(6, deltatime)
+        # if getKeyPressed(self.handle, GLFW.KEY_A):
+        #     self.camera.process_keyboard(2, deltatime)
+        # if getKeyPressed(self.handle, GLFW.KEY_D):
+        #     self.camera.process_keyboard(3, deltatime)
+        # if getKeyPressed(self.handle, GLFW.KEY_SPACE):
+        #     self.camera.process_keyboard(7, deltatime)
+        # if getKeyPressed(self.handle, GLFW.KEY_LEFT_CONTROL):
+        #     self.camera.process_keyboard(6, deltatime)
+        self.camera.position.xy = self.objects[-3]["player"].transform.position.xy
 
         # set skybox position here because it will lag behind the camera if you dont
         self.skybox.transform.position = self.camera.position
@@ -89,9 +90,9 @@ class CoolWindow(GameWindow):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-        self.skybox = Skybox(vec3(0), vec3(0), "resources/textures/skyboxes/mountain2.png")
+        self.skybox = Skybox(vec3(0), vec3(0), "resources/textures/skyboxes/sky1.png")
         self.skybox.rotVel.y = 1
-        block = VerticeModel(
+        block_gray = VerticeModel(
             {"vertices":
                 VerticeMesh(
                     [
@@ -106,135 +107,50 @@ class CoolWindow(GameWindow):
             "colors":
                 VerticeMesh(
                     [
-                        0,0,1,
-                        0,1,0,
-                        1,0,0,
-                        0,0,1,
-                        0,1,0,
-                        1,0,0,
+                        0.25,0.25,0.3,
+                        0.25,0.25,0.3,
+                        0.25,0.25,0.3,
+                        0.25,0.25,0.3,
+                        0.25,0.25,0.3,
+                        0.25,0.25,0.3,
                     ]
                 )
             }
         )
-        self.objects[-3]["terrain1"] = (
-            VerticeModelObject(
-                block,
-                vec3(0,0,0),
-                vec3(0),
-                (
-                    ShaderBuilder(
-                        "resources/shaders/test.vert",
-                        "resources/shaders/test.frag",
-                        2),
+        player_vm = VerticeModel(
+            {"vertices":
+                VerticeMesh(
                     [
-                        (0, 2),
-                        (1, 3)
-                    ]
-                ),
-                True
-            )
-        )
-        self.objects[-3]["mover"] = (
-            VerticeModelObject(
-                block,
-                vec3(0,1,0),
-                vec3(0),
-                (
-                    ShaderBuilder(
-                        "resources/shaders/test.vert",
-                        "resources/shaders/test.frag",
-                        2),
+                        -1, -1,
+                         1, -1,
+                         1,  1,
+                        -1, -1,
+                         1,  1,
+                        -1,  1
+                ]
+            ),
+            "colors":
+                VerticeMesh(
                     [
-                        (0, 2),
-                        (1, 3)
-                    ]
-                ),
-                True
-            )
-        )
-        self.objects[-4]["terrain2"] = (
-            VerticeModelObject(
-                block,
-                vec3(0,1,0),
-                vec3(0),
-                (
-                    ShaderBuilder(
-                        "resources/shaders/test.vert",
-                        "resources/shaders/test.frag",
-                        2),
-                    [
-                        (0, 2),
-                        (1, 3)
-                    ]
-                ),
-                True
-            )
-        )
-        self.objects[-1]["wall1"] = (
-            VerticeModelObject(
-                block,
-                vec3(0,1,0),
-                vec3(0),
-                (
-                    ShaderBuilder(
-                        "resources/shaders/test.vert",
-                        "resources/shaders/test.frag",
-                        2),
-                    [
-                        (0, 2),
-                        (1, 3)
-                    ]
-                ),
-                True
-            )
-        )
-        self.objects[-3]["box"] = (
-            VerticeModelObject(
-                VerticeModel(
-                    {"vertices":
-                        VerticeMesh(
-                            [
-                                -1, -1,
-                                 1, -1,
-                                 1,  1,
-                                -1, -1,
-                                 1,  1,
-                                -1,  1
-                        ]
-                    ),
-                    "colors":
-                        VerticeMesh(
-                            [
-                                1.000, 0.984, 0.902,
-                                1.000, 0.984, 0.902,
-                                1.000, 0.984, 0.902,
-                                1.000, 0.984, 0.902,
-                                1.000, 0.984, 0.902,
-                                1.000, 0.984, 0.902
-                            ]
-                        )
-                    }
-                ),
-                vec3(0,2,0),
-                vec3(0),
-                (
-                    ShaderBuilder(
-                        "resources/shaders/test.vert",
-                        "resources/shaders/test.frag",
-                        2),
-                    [
-                        (0, 2),
-                        (1, 3)
+                        1.000, 0.984, 0.902,
+                        1.000, 0.984, 0.902,
+                        1.000, 0.984, 0.902,
+                        1.000, 0.984, 0.902,
+                        1.000, 0.984, 0.902,
+                        1.000, 0.984, 0.902
                     ]
                 )
-            )
+            }
         )
-        self.objects[-4]["terrain2"].transform.scale = vec3(100,10,1)
-        self.objects[-3]["terrain1"].transform.scale = vec3(100,1,1)
-        self.objects[-3]["mover"].transform.scale = vec3(1,5,1)
-        self.objects[-1]["wall1"].transform.scale = vec3(2,10,1)
+        self.objects[-3]["floor1"] = simpleRectangle(block_gray, pos=vec3(0,-5,0),scale=vec3(120,10,1))
+        self.objects[-3]["floor2"] = simpleRectangle(block_gray, pos=vec3(0,15,0),scale=vec3(120,10,1))
+        self.objects[-3]["wall1"] = simpleRectangle(block_gray, pos=vec3(-55,5,0),scale=vec3(10,30,1))
+        self.objects[-3]["wall2"] = simpleRectangle(block_gray, pos=vec3(75,5,0),scale=vec3(10,30,1))
+        self.objects[-3]["mover"] = simpleRectangle(block_gray, pos=vec3(65,10,0),scale=vec3(10,10,1))
+        self.objects[-3]["player"] = simpleRectangle(player_vm, pos=vec3(0,2,0), locked=False)
         self.mouseHandler = MouseHandler()
-        self.camera = Camera3D(move_speed=20, far=1000)
+        self.camera = Camera3D(move_speed=20, far=1000, position=vec3(0,0,15))
+        # print(self.objects)
 
     def render(self):
         GL.glClear(GL.GL_DEPTH_BUFFER_BIT) # clear the depth buffer (3d)
@@ -251,7 +167,7 @@ class CoolWindow(GameWindow):
                 o.shader.setMat4fv("projection", cameraProj)
                 o.shader.setMat4fv("view", cameraView)
                 o.shader.setVec3f("fogColor", 0.969, 0.969, 0.969)
-                o.shader.setFloat("fogDensity", .001)
+                o.shader.setFloat("fogDensity", .025)
                 o.shader.setFloat("layer", float(layer))
                 o.draw()
 
@@ -265,11 +181,11 @@ class CoolWindow(GameWindow):
             if key == GLFW.KEY_EQUAL:
                 self.set_cursor_mode(GLFW.CURSOR_DISABLED)
             if key == GLFW.KEY_LEFT:
-                self.objects[-3]["box"].posVel.x -= 5
+                self.objects[-3]["player"].posVel.x -= 5
             if key == GLFW.KEY_RIGHT:
-                self.objects[-3]["box"].posVel.x += 5
+                self.objects[-3]["player"].posVel.x += 5
             if key == GLFW.KEY_UP:
-                self.objects[-3]["box"].posVel.y += 5
+                self.objects[-3]["player"].posVel.y += 25
 
     def on_resize(self, width, height):
         GL.glViewport(0, 0, width, height)

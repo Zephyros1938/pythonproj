@@ -7,6 +7,7 @@ from lib import getlib, cstr
 logger = getlib("logger")
 info = logger.info
 error = logger.error
+warn = logger.warn
 
 class Shader:
     def __init__(self, vertexPath: str, fragmentPath: str, drawmode = GL.GL_TRIANGLES):
@@ -158,7 +159,7 @@ class ShaderBuilder:
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         if self.attributeIndex != self.vertexSize:
-            print(f"[WARN] Attribute index {self.attributeIndex} does not equal Vertex Size {self.vertexSize}!\r\n\tDid you set your attributes correctly?")
+            warn(1, cstr(f"Attribute index {self.attributeIndex} does not equal Vertex Size {self.vertexSize}!\r\n\tDid you set your attributes correctly?"))
         return (self.shader, self.VAO)
     def fromVerticeModel(self, model: VerticeModel, indexes: list[tuple[int, int]]):
         if len(model.verticeMeshes.items()) != len(indexes):

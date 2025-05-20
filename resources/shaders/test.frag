@@ -10,8 +10,8 @@ uniform float fogDensity; // Controls fog strength
 
 void main() {
     float fogFactor = exp(-fogDensity * fragDepth);
-    fogFactor = clamp(fogFactor, 0.0, 1.0);
+    float fogFactorC = clamp(fogFactor, 0.0, 1.0);
 
-    vec3 blended = mix(fogColor, color, fogFactor);
-    FragColor = vec4(blended, 1.0);
+    vec3 blended = mix(fogColor, color, fogFactorC);
+    FragColor = vec4(blended, clamp(2.0 - fogFactor, 0.0, 1.0));
 }
