@@ -1,5 +1,5 @@
 import lib
-from resources.scripts.physics.transform import getTransformAABBCollision
+from resources.scripts.physics.transform import getAABBCollision, AABBCollisionDirection
 lib.init(debug=True, debugLibInternals=True)
 logger = lib.getlib("logger")
 logger.init(lib.getEnumV("logger", "LEVELS", "ERROR"))
@@ -27,6 +27,7 @@ class CoolWindow(GameWindow):
         super().__init__(hints)
         self.objects  : dict[int, dict[str,Obj]]    = {x: {} for x in range(-100,101)}
         self.shaders  : list[Shader] = []
+        self.canJump = True
 
     def update(self, deltatime: float):
         self.objects[-3]["mover"].transform.position.y =  5 + (10 * (sin(2 * self._time.total)))
@@ -46,11 +47,15 @@ class CoolWindow(GameWindow):
             for on, obj in objs.items():
                 if not obj.flags.get("locked"):
                     for ln, lo in lockedObjects.items():
-                        collision, mtv = getTransformAABBCollision(obj.transform, lo.transform)
+                        collision, mtv, dir = getAABBCollision(obj.transform, lo.transform)
                         if collision:
-                            print(f"{on} colide with {ln}! need {mtv} to correct!")
+                            print(f"{on} colide with {ln} at {dir}!")
                             obj.transform.position -= 1* mtv  # Apply MTV to resolve the collision
                             obj.posVel -= 5 * mtv
+                            if dir == AABBCollisionDirection.BOTTOM and not self.canJump:
+                                self.canJump = True
+                        # if dir == AABBCollisionDirection.NO_COLLIDE and self.canJump:
+                        #     self.canJump = False
 
             # Bound checking
             for obj in objs.values():
@@ -115,8 +120,7 @@ class CoolWindow(GameWindow):
                         0.25,0.25,0.3,
                     ]
                 )
-            }
-        )
+            })
         player_vm = VerticeModel(
             {"vertices":
                 VerticeMesh(
@@ -140,8 +144,7 @@ class CoolWindow(GameWindow):
                         1.000, 0.984, 0.902
                     ]
                 )
-            }
-        )
+            })
         self.objects[-3]["floor1"] = simpleRectangle(block_gray, pos=vec3(0,-5,0),scale=vec3(120,10,1))
         self.objects[-3]["floor2"] = simpleRectangle(block_gray, pos=vec3(0,15,0),scale=vec3(120,10,1))
         self.objects[-3]["wall1"] = simpleRectangle(block_gray, pos=vec3(-55,5,0),scale=vec3(10,30,1))
@@ -185,7 +188,9 @@ class CoolWindow(GameWindow):
             if key == GLFW.KEY_RIGHT:
                 self.objects[-3]["player"].posVel.x += 5
             if key == GLFW.KEY_UP:
-                self.objects[-3]["player"].posVel.y += 25
+                if self.canJump:
+                    self.objects[-3]["player"].posVel.y += 25
+                    self.canJump = False
 
     def on_resize(self, width, height):
         GL.glViewport(0, 0, width, height)
@@ -200,5 +205,5 @@ class CoolWindow(GameWindow):
         self.camera.process_scroll(yoffset)
 
 if __name__ == "__main__":
-    cool_window = CoolWindow((1920, 1080))
+    cool_window = CoolWindow((800, 600))
     cool_window.run()
