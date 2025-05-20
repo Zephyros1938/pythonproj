@@ -1,6 +1,6 @@
 import glfw as GLFW
 
-def default_window_hints() -> dict[int, int]:
+def default_window_flags() -> dict[int, int]:
     """
     Returns default GLFW window hints.
 
@@ -21,13 +21,13 @@ def default_window_hints() -> dict[int, int]:
 
 
 class Window:
-    def __init__(self, viewport: tuple[int, int], name = "GLFW Window", hints: dict[int, int] = default_window_hints(), debug: bool = False):
+    def __init__(self, viewport: tuple[int, int], name = "GLFW Window", flags: dict[int, int] = default_window_flags(), debug: bool = False):
         # makes sure that GLFW is initialized
         if not GLFW.init():
             raise Exception("[ERROR] Failed to intialize GLFW!")
 
         # set window hints
-        for (hint, value) in hints.items():
+        for (hint, value) in flags.items():
             GLFW.window_hint(hint, value)
 
         # create window

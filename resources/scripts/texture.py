@@ -1,3 +1,4 @@
+from resources.scripts.cacheManager import cacheFileBytes, getCachedItemBytes
 from dataclasses import dataclass
 from OpenGL.GL import GL_MIRRORED_REPEAT, GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE, GL_REPEAT, GL_TEXTURE_WRAP_T
 from OpenGL.GL import GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER, GL_LINEAR, GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST, GL_NEAREST_MIPMAP_LINEAR, GL_LINEAR_MIPMAP_NEAREST, GL_LINEAR_MIPMAP_LINEAR
@@ -18,13 +19,11 @@ stb_image = getlib("stb_image")
 @dataclass
 class Texture:
     path: str
-    type: str
     id: int
 
     def __init__(
         self,
         path: str,
-        type_s: str,
         flip: bool = True,
         wrap_s: int = GL_REPEAT,
         wrap_t: int = GL_REPEAT,
@@ -73,7 +72,6 @@ class Texture:
                 0
             )
             info(1, cstr(f"Got image: {path}"))
-            print(os.path.exists(path), path)
 
             width = width_ptr[0]
             height = height_ptr[0]
@@ -96,10 +94,15 @@ class Texture:
 
             info(3, cstr(f"Image size: {width}x{height}, Channels: {nrChannels}, Total size: {size}"))
 
-            dataAddress = int(ffi.cast("intptr_t", data))
-            print(dataAddress)
 
-            dat = ffi.unpack(data, size)
+            try:
+                dat = getCachedItemBytes(path)
+                info(3, cstr("Image cached, loading"))
+            except FileNotFoundError:
+                info(3, cstr("Image was not cached! caching..."))
+                dat = ffi.unpack(data, size)
+                cacheFileBytes(path, dat)
+                info(3, cstr("Image cached."))
 
             startProcessTime = time.time()
             glTexImage2D(
@@ -123,5 +126,4 @@ class Texture:
         except Exception as e:
             raise Exception(f"[ERROR] Failed to load image '{os.path.abspath(path)}' with error {e}")
 
-        self.type = type_s
         self.id = texture_id.value

@@ -1,7 +1,6 @@
 import OpenGL.GL as GL
 from pyglm.glm import vec4, mat4, value_ptr, vec3, vec2
 import ctypes
-from typing import Union
 import numpy as np
 
 from lib import getlib, cstr
