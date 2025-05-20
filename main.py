@@ -32,6 +32,7 @@ class CoolWindow(GameWindow):
     def update(self, deltatime: float):
         self.objects[-3]["mover"].transform.position.x =  60 + (5  * (cos(1 * self._time.total)))
         self.objects[-3]["mover"].transform.position.y =  10 + (15 * (sin(1 * self._time.total)))
+        self.canJump = False
         for layer, objs in self.objects.items():
             lockedObjects = {
                 key: val
@@ -96,7 +97,7 @@ class CoolWindow(GameWindow):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-        self.skybox = Skybox(vec3(0), vec3(0), "resources/textures/skyboxes/mountain2.png")
+        self.skybox = Skybox(vec3(0), vec3(0), "resources/textures/skyboxes/low_quality/winter1.jpg") # maybe use from https://mega.nz/folder/lvUSxaLA#9KIzwKK2LDNrsIpG9K0DZA
         self.skybox.rotVel.y = 1
         block_gray = VerticeModel(
             {"vertices":

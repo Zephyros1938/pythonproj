@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Any, Union
 from pyglm.glm import vec3, length, exp
 import OpenGL.GL as GL
 from resources.scripts.texture import Texture
@@ -55,7 +55,7 @@ class Obj:
 
 class VerticeModelObject(Obj):
     vm: 'VerticeModel'
-    flags: dict[str, Union[str, int, float, bool]]
+    flags: dict[str, Any]
     def __init__(self, vm: VerticeModel, pos: vec3, shaderBuilderInfo: tuple[ShaderBuilder, list[tuple[int, int]]], locked=False, rot: vec3= vec3(0), scale = vec3(1)):
         self.transform = Transform(pos, rot)
         self.transform.scale = scale
@@ -115,7 +115,7 @@ class Skybox(Obj):
     shader: Shader
     vao: int
     image: Texture
-    flags: dict[str, Union[str, int, float, bool]]
+    flags: dict[str, Any]
     def __init__(self, rot:vec3, pos:vec3, imagePath: str):
         self.transform = Transform(pos, rot)
         self.posVel = vec3(0)
