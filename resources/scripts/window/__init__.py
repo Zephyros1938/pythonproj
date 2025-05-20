@@ -81,6 +81,14 @@ class Window:
         """Returns the mouse's current position"""
         return GLFW.get_cursor_pos(self.handle)
 
+    def set_cursor_mode(self, mode: int):
+        """Sets the cursor's mode (GLFW.CURSOR_NORMAL, GLFW.CURSOR_HIDDEN, GLFW.CURSOR_DISABLED)"""
+        GLFW.set_input_mode(self.handle, GLFW.CURSOR, mode)
+
+    def get_cursor_mode(self):
+        """Gets the cursor's mode (GLFW.CURSOR_NORMAL, GLFW.CURSOR_HIDDEN, GLFW.CURSOR_DISABLED)"""
+        return GLFW.get_input_mode(self.handle, GLFW.CURSOR)
+
     def set_window_size(self, width, height):
         """Sets the windows size"""
         GLFW.set_window_size(self.handle, width, height)

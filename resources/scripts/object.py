@@ -1,3 +1,4 @@
+from typing import Union
 from pyglm.glm import vec3, length, exp
 import OpenGL.GL as GL
 from resources.scripts.texture import Texture
@@ -16,7 +17,8 @@ class Obj:
     rotVel: vec3
     shader: Shader
     vao: int
-    def __init__(self, pos: vec3, rot: vec3, shaderName: str):
+    flags: dict[str, Union[str, int, float, bool]]
+    def __init__(self, pos: vec3, rot: vec3, shaderName: str,locked=False, flags = {}):
         self.transform = Transform(pos, rot)
         self.posVel = vec3(0.0)
         self.rotVel = vec3(0.0)
@@ -24,6 +26,8 @@ class Obj:
             ospath.abspath(ospath.join("resources", "shaders", shaderName + ".vert")),
             ospath.abspath(ospath.join("resources", "shaders", shaderName + ".frag"))
         )
+        self.locked = locked
+        self.flags = {}
 
     def update(self, dt: float):
         drag = 1
@@ -45,20 +49,44 @@ class Obj:
     def draw(self, *args, **kwargs):
         raise NotImplementedError("Base Obj class cannot be drawn!")
 
+    def setPos(self, position: vec3):
+        self.transform.position = position
+
 
 class VerticeModelObject(Obj):
     vm: 'VerticeModel'
-    def __init__(self, vm: VerticeModel, pos: vec3, rot: vec3, shaderBuilderInfo: tuple[ShaderBuilder, list[tuple[int, int]]]):
+    flags: dict[str, Union[str, int, float, bool]]
+    def __init__(self, vm: VerticeModel, pos: vec3, rot: vec3, shaderBuilderInfo: tuple[ShaderBuilder, list[tuple[int, int]]], locked=False):
         self.transform = Transform(pos, rot)
         self.posVel = vec3(0.0)
         self.rotVel = vec3(0.0)
         self.vm = vm
         (self.shader, self.vao) = shaderBuilderInfo[0].fromVerticeModel(vm, shaderBuilderInfo[1])
+        self.flags = {"locked": locked}
+    def update(self, dt: float):
+        drag = 1
 
+        self.transform.position += self.posVel * dt
+        self.transform.rotation += self.rotVel * dt
+
+        # exponential damping
+        self.posVel *= exp(-drag * dt)
+        self.rotVel *= exp(-drag * dt)
+
+        if length(self.posVel) < 1e-4:
+            self.posVel = vec3(0.0)
+        if length(self.rotVel) < 1e-4:
+            self.rotVel = vec3(0.0)
+        if self.posVel.y > 5:
+            self.posVel.y = 5
+
+        self.transform.update_matrix()
     def draw(self):
         self.shader.activate()
         self.shader.setMat4fv("model", self.transform.model)
         self.vm.draw(self.shader, self.vao)
+
+
 class Skybox(Obj):
     vertices: list[float] = [
         # front
@@ -86,11 +114,13 @@ class Skybox(Obj):
     shader: Shader
     vao: int
     image: Texture
+    flags: dict[str, Union[str, int, float, bool]]
     def __init__(self, rot:vec3, pos:vec3, imagePath: str):
         self.transform = Transform(pos, rot)
         self.posVel = vec3(0)
         self.rotVel = vec3(0)
-        self.image = Texture(imagePath, min_filter=GL.GL_NEAREST_MIPMAP_NEAREST, mag_filter=GL.GL_NEAREST)
+        self.image = Texture(imagePath, min_filter=GL.GL_NEAREST_MIPMAP_NEAREST, mag_filter=GL.GL_NEAREST, wrap_s=GL.GL_CLAMP_TO_EDGE, wrap_t=GL.GL_CLAMP_TO_EDGE)
+        self.flags = {"locked": True}
 
         texcoords = [
             # front
@@ -137,6 +167,12 @@ class Skybox(Obj):
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
         GL.glBindVertexArray(0)
         self.vao = vao
+    def update(self, dt: float):
+        self.transform.position += self.posVel * dt
+        self.transform.rotation += self.rotVel * dt
+
+        self.transform.update_matrix()
+
     def draw(self):
         GL.glDepthMask(GL.GL_FALSE)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.image.id)

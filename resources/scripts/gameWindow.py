@@ -39,7 +39,7 @@ class GameWindow(Window):
             self.__update()
             self.render()
             self.swap_buffers()
-        GLFW.terminate()
+        self.destroy()
 
     def on_init(self):
         super().__init__(self._hints.viewport, self._hints.name, self._hints.flags, self._hints.debugWindowCreation)
@@ -48,6 +48,8 @@ class GameWindow(Window):
         GLFW.set_cursor_pos_callback(self.handle, self._cursor_callback)
         GLFW.set_scroll_callback(self.handle, self._scroll_callback)
         GLFW.set_framebuffer_size_callback(self.handle, self._resize_callback)
+        self.set_window_size(self._hints.viewport[0]-5,self._hints.viewport[1])
+        self.set_window_size(self._hints.viewport[0],self._hints.viewport[1])
         GL.glClearColor(0.0, 0.0, 0.0, 0.0)
 
     def render(self):

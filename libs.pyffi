@@ -76,243 +76,243 @@ F.ARG i32
 F.ARG char*
 F.RET Null
 ENDLIBRARY
-LIBRARY assimp
-
-F.DEF aiImportFile
-F.ARG char*
-F.ARG i32
-F.RET POINTER_void
-
-F.DEF aiReleaseImport
-F.ARG POINTER_void
-F.RET Null
-
-F.DEF aiGetErrorString
-F.RET char*
-
-E.DEF aiPostProcessSteps
-E.VAL aiProcess_CalcTangentSpace i32 0x1
-E.VAL aiProcess_JoinIdenticalVertices i32 0x2
-E.VAL aiProcess_MakeLeftHanded i32 0x4
-E.VAL aiProcess_Triangulate i32 0x8
-E.VAL aiProcess_RemoveComponent i32 0x10
-E.VAL aiProcess_GenNormals i32 0x20
-E.VAL aiProcess_GenSmoothNormals i32 0x40
-E.VAL aiProcess_SplitLargeMeshes i32 0x80
-E.VAL aiProcess_PreTransformVertices i32 0x100
-E.VAL aiProcess_LimitBoneWeights i32 0x200
-E.VAL aiProcess_ValidateDataStructure i32 0x400
-E.VAL aiProcess_ImproveCacheLocality i32 0x800
-E.VAL aiProcess_RemoveRedundantMaterials i32 0x1000
-E.VAL aiProcess_FixInfacingNormals i32 0x2000
-E.VAL aiProcess_SortByPType i32 0x8000
-E.VAL aiProcess_FindDegenerates i32 0x10000
-E.VAL aiProcess_FindInvalidData i32 0x20000
-E.VAL aiProcess_GenUVCoords i32 0x40000
-E.VAL aiProcess_TransformUVCoords i32 0x80000
-E.VAL aiProcess_FindInstances i32 0x100000
-E.VAL aiProcess_OptimizeMeshes i32 0x200000
-E.VAL aiProcess_OptimizeGraph i32 0x400000
-E.VAL aiProcess_FlipUVs i32 0x800000
-E.VAL aiProcess_FlipWindingOrder i32 0x1000000
-E.VAL aiProcess_SplitByBoneCount i32 0x2000000
-E.VAL aiProcess_Debone i32 0x4000000
-E.VAL aiProcess_GlobalScale i32 0x8000000
-E.VAL aiProcess_EmbedTextures i32 0x10000000
-E.VAL aiProcess_ForceGenNormals i32 0x20000000
-E.VAL aiProcess_DropNormals i32 0x40000000
-E.VAL aiProcess_GenBoundingBoxes i32 0x80000000
-E.END
-
-F.DEF aiImportFileEx
-F.ARG char*
-F.ARG i32
-F.ARG POINTER_void
-F.RET POINTER_void
-
-F.DEF aiGetMaterialFloatArray
-F.ARG POINTER_void
-F.ARG char*
-F.ARG i32
-F.ARG i32
-F.ARG POINTER_f32
-F.ARG POINTER_u32
-F.RET i32
-
-F.DEF aiGetMaterialIntegerArray
-F.ARG POINTER_void
-F.ARG char*
-F.ARG i32
-F.ARG i32
-F.ARG POINTER_i32
-F.ARG POINTER_u32
-F.RET i32
-
-F.DEF aiGetMaterialString
-F.ARG POINTER_void
-F.ARG char*
-F.ARG i32
-F.ARG i32
-F.ARG POINTER_char*
-F.RET i32
-
-F.DEF aiGetMaterialTexture
-F.ARG POINTER_void
-F.ARG i32
-F.ARG u32
-F.ARG POINTER_char*
-F.ARG POINTER_u32
-F.ARG POINTER_f32
-F.ARG POINTER_u32
-F.ARG POINTER_u32
-F.ARG POINTER_u32
-F.ARG POINTER_u32
-F.RET i32
-
-F.DEF aiApplyPostProcessing
-F.ARG POINTER_void
-F.ARG i32
-F.RET POINTER_void
-
-E.DEF aiTextureType
-E.VAL aiTextureType_NONE i32 0
-E.VAL aiTextureType_DIFFUSE i32 1
-E.VAL aiTextureType_SPECULAR i32 2
-E.VAL aiTextureType_AMBIENT i32 3
-E.VAL aiTextureType_EMISSIVE i32 4
-E.VAL aiTextureType_HEIGHT i32 5
-E.VAL aiTextureType_NORMALS i32 6
-E.VAL aiTextureType_SHININESS i32 7
-E.VAL aiTextureType_OPACITY i32 8
-E.VAL aiTextureType_DISPLACEMENT i32 9
-E.VAL aiTextureType_LIGHTMAP i32 10
-E.VAL aiTextureType_REFLECTION i32 11
-E.VAL aiTextureType_BASE_COLOR i32 12
-E.VAL aiTextureType_NORMAL_CAMERA i32 13
-E.VAL aiTextureType_EMISSION_COLOR i32 14
-E.VAL aiTextureType_METALNESS i32 15
-E.VAL aiTextureType_DIFFUSE_ROUGHNESS i32 16
-E.VAL aiTextureType_AMBIENT_OCCLUSION i32 17
-E.VAL aiTextureType_SHEEN i32 19
-E.VAL aiTextureType_CLEARCOAT i32 20
-E.VAL aiTextureType_TRANSMISSION i32 21
-E.VAL aiTextureType_UNKNOWN i32 18
-E.END
-
-E.DEF aiReturn
-E.VAL aiReturn_SUCCESS i32 0
-E.VAL aiReturn_FAILURE i32 -1
-E.VAL aiReturn_OUTOFMEMORY i32 -3
-E.END
-
-E.DEF aiPrimitiveType
-E.VAL aiPrimitiveType_POINT i32 0x1
-E.VAL aiPrimitiveType_LINE i32 0x2
-E.VAL aiPrimitiveType_TRIANGLE i32 0x4
-E.VAL aiPrimitiveType_POLYGON i32 0x8
-E.END
-
-E.DEF aiComponent
-E.VAL aiComponent_NORMALS i32 0x2
-E.VAL aiComponent_TANGENTS_AND_BITANGENTS i32 0x4
-E.VAL aiComponent_COLORS i32 0x8
-E.VAL aiComponent_TEXCOORDS i32 0x10
-E.VAL aiComponent_BONEWEIGHTS i32 0x20
-E.VAL aiComponent_ANIMATIONS i32 0x40
-E.VAL aiComponent_TEXTURES i32 0x80
-E.VAL aiComponent_LIGHTS i32 0x100
-E.VAL aiComponent_CAMERAS i32 0x200
-E.VAL aiComponent_MESHES i32 0x400
-E.VAL aiComponent_MATERIALS i32 0x800
-E.END
-
-F.DEF aiImportFileFromMemory
-F.ARG POINTER_u8
-F.ARG u32
-F.ARG i32
-F.ARG char*
-F.RET POINTER_void
-
-F.DEF aiImportFileFromMemoryWithProperties
-F.ARG POINTER_u8
-F.ARG u32
-F.ARG i32
-F.ARG char*
-F.ARG POINTER_void
-F.RET POINTER_void
-
-F.DEF aiImportFileExWithProperties
-F.ARG char*
-F.ARG i32
-F.ARG POINTER_void
-F.ARG POINTER_void
-F.RET POINTER_void
-
-F.DEF aiGetImportFormatCount
-F.RET u32
-
-F.DEF aiGetImportFormatDescription
-F.ARG u32
-F.RET POINTER_void
-
-F.DEF aiSetImportPropertyInteger
-F.ARG POINTER_void
-F.ARG char*
-F.ARG i32
-F.RET Null
-
-F.DEF aiSetImportPropertyFloat
-F.ARG POINTER_void
-F.ARG char*
-F.ARG f32
-F.RET Null
-
-F.DEF aiSetImportPropertyString
-F.ARG POINTER_void
-F.ARG char*
-F.ARG char*
-F.RET Null
-
-F.DEF aiGetPredefinedLogStream
-F.ARG i32
-F.ARG char*
-F.RET POINTER_void
-
-F.DEF aiAttachLogStream
-F.ARG POINTER_void
-F.RET Null
-
-F.DEF aiDetachLogStream
-F.ARG POINTER_void
-F.RET Null
-
-F.DEF aiDetachAllLogStreams
-F.RET Null
-
-F.DEF aiGetVersionMajor
-F.RET i32
-
-F.DEF aiGetVersionMinor
-F.RET i32
-
-F.DEF aiGetVersionRevision
-F.RET i32
-
-F.DEF aiGetCompileFlags
-F.RET i32
-
-ENDLIBRARY
-LIBRARY test
-
-C.DEF TestClass
-C.CTOR i32
-C.METHOD doSomething
-C.ARG i32
-C.RET Null
-C.END
-
-F.DEF test
-F.ARG i32
-F.RET Null
-
-ENDLIBRARY
+//LIBRARY assimp
+//
+//F.DEF aiImportFile
+//F.ARG char*
+//F.ARG i32
+//F.RET POINTER_void
+//
+//F.DEF aiReleaseImport
+//F.ARG POINTER_void
+//F.RET Null
+//
+//F.DEF aiGetErrorString
+//F.RET char*
+//
+//E.DEF aiPostProcessSteps
+//E.VAL aiProcess_CalcTangentSpace i32 0x1
+//E.VAL aiProcess_JoinIdenticalVertices i32 0x2
+//E.VAL aiProcess_MakeLeftHanded i32 0x4
+//E.VAL aiProcess_Triangulate i32 0x8
+//E.VAL aiProcess_RemoveComponent i32 0x10
+//E.VAL aiProcess_GenNormals i32 0x20
+//E.VAL aiProcess_GenSmoothNormals i32 0x40
+//E.VAL aiProcess_SplitLargeMeshes i32 0x80
+//E.VAL aiProcess_PreTransformVertices i32 0x100
+//E.VAL aiProcess_LimitBoneWeights i32 0x200
+//E.VAL aiProcess_ValidateDataStructure i32 0x400
+//E.VAL aiProcess_ImproveCacheLocality i32 0x800
+//E.VAL aiProcess_RemoveRedundantMaterials i32 0x1000
+//E.VAL aiProcess_FixInfacingNormals i32 0x2000
+//E.VAL aiProcess_SortByPType i32 0x8000
+//E.VAL aiProcess_FindDegenerates i32 0x10000
+//E.VAL aiProcess_FindInvalidData i32 0x20000
+//E.VAL aiProcess_GenUVCoords i32 0x40000
+//E.VAL aiProcess_TransformUVCoords i32 0x80000
+//E.VAL aiProcess_FindInstances i32 0x100000
+//E.VAL aiProcess_OptimizeMeshes i32 0x200000
+//E.VAL aiProcess_OptimizeGraph i32 0x400000
+//E.VAL aiProcess_FlipUVs i32 0x800000
+//E.VAL aiProcess_FlipWindingOrder i32 0x1000000
+//E.VAL aiProcess_SplitByBoneCount i32 0x2000000
+//E.VAL aiProcess_Debone i32 0x4000000
+//E.VAL aiProcess_GlobalScale i32 0x8000000
+//E.VAL aiProcess_EmbedTextures i32 0x10000000
+//E.VAL aiProcess_ForceGenNormals i32 0x20000000
+//E.VAL aiProcess_DropNormals i32 0x40000000
+//E.VAL aiProcess_GenBoundingBoxes i32 0x80000000
+//E.END
+//
+//F.DEF aiImportFileEx
+//F.ARG char*
+//F.ARG i32
+//F.ARG POINTER_void
+//F.RET POINTER_void
+//
+//F.DEF aiGetMaterialFloatArray
+//F.ARG POINTER_void
+//F.ARG char*
+//F.ARG i32
+//F.ARG i32
+//F.ARG POINTER_f32
+//F.ARG POINTER_u32
+//F.RET i32
+//
+//F.DEF aiGetMaterialIntegerArray
+//F.ARG POINTER_void
+//F.ARG char*
+//F.ARG i32
+//F.ARG i32
+//F.ARG POINTER_i32
+//F.ARG POINTER_u32
+//F.RET i32
+//
+//F.DEF aiGetMaterialString
+//F.ARG POINTER_void
+//F.ARG char*
+//F.ARG i32
+//F.ARG i32
+//F.ARG POINTER_char*
+//F.RET i32
+//
+//F.DEF aiGetMaterialTexture
+//F.ARG POINTER_void
+//F.ARG i32
+//F.ARG u32
+//F.ARG POINTER_char*
+//F.ARG POINTER_u32
+//F.ARG POINTER_f32
+//F.ARG POINTER_u32
+//F.ARG POINTER_u32
+//F.ARG POINTER_u32
+//F.ARG POINTER_u32
+//F.RET i32
+//
+//F.DEF aiApplyPostProcessing
+//F.ARG POINTER_void
+//F.ARG i32
+//F.RET POINTER_void
+//
+//E.DEF aiTextureType
+//E.VAL aiTextureType_NONE i32 0
+//E.VAL aiTextureType_DIFFUSE i32 1
+//E.VAL aiTextureType_SPECULAR i32 2
+//E.VAL aiTextureType_AMBIENT i32 3
+//E.VAL aiTextureType_EMISSIVE i32 4
+//E.VAL aiTextureType_HEIGHT i32 5
+//E.VAL aiTextureType_NORMALS i32 6
+//E.VAL aiTextureType_SHININESS i32 7
+//E.VAL aiTextureType_OPACITY i32 8
+//E.VAL aiTextureType_DISPLACEMENT i32 9
+//E.VAL aiTextureType_LIGHTMAP i32 10
+//E.VAL aiTextureType_REFLECTION i32 11
+//E.VAL aiTextureType_BASE_COLOR i32 12
+//E.VAL aiTextureType_NORMAL_CAMERA i32 13
+//E.VAL aiTextureType_EMISSION_COLOR i32 14
+//E.VAL aiTextureType_METALNESS i32 15
+//E.VAL aiTextureType_DIFFUSE_ROUGHNESS i32 16
+//E.VAL aiTextureType_AMBIENT_OCCLUSION i32 17
+//E.VAL aiTextureType_SHEEN i32 19
+//E.VAL aiTextureType_CLEARCOAT i32 20
+//E.VAL aiTextureType_TRANSMISSION i32 21
+//E.VAL aiTextureType_UNKNOWN i32 18
+//E.END
+//
+//E.DEF aiReturn
+//E.VAL aiReturn_SUCCESS i32 0
+//E.VAL aiReturn_FAILURE i32 -1
+//E.VAL aiReturn_OUTOFMEMORY i32 -3
+//E.END
+//
+//E.DEF aiPrimitiveType
+//E.VAL aiPrimitiveType_POINT i32 0x1
+//E.VAL aiPrimitiveType_LINE i32 0x2
+//E.VAL aiPrimitiveType_TRIANGLE i32 0x4
+//E.VAL aiPrimitiveType_POLYGON i32 0x8
+//E.END
+//
+//E.DEF aiComponent
+//E.VAL aiComponent_NORMALS i32 0x2
+//E.VAL aiComponent_TANGENTS_AND_BITANGENTS i32 0x4
+//E.VAL aiComponent_COLORS i32 0x8
+//E.VAL aiComponent_TEXCOORDS i32 0x10
+//E.VAL aiComponent_BONEWEIGHTS i32 0x20
+//E.VAL aiComponent_ANIMATIONS i32 0x40
+//E.VAL aiComponent_TEXTURES i32 0x80
+//E.VAL aiComponent_LIGHTS i32 0x100
+//E.VAL aiComponent_CAMERAS i32 0x200
+//E.VAL aiComponent_MESHES i32 0x400
+//E.VAL aiComponent_MATERIALS i32 0x800
+//E.END
+//
+//F.DEF aiImportFileFromMemory
+//F.ARG POINTER_u8
+//F.ARG u32
+//F.ARG i32
+//F.ARG char*
+//F.RET POINTER_void
+//
+//F.DEF aiImportFileFromMemoryWithProperties
+//F.ARG POINTER_u8
+//F.ARG u32
+//F.ARG i32
+//F.ARG char*
+//F.ARG POINTER_void
+//F.RET POINTER_void
+//
+//F.DEF aiImportFileExWithProperties
+//F.ARG char*
+//F.ARG i32
+//F.ARG POINTER_void
+//F.ARG POINTER_void
+//F.RET POINTER_void
+//
+//F.DEF aiGetImportFormatCount
+//F.RET u32
+//
+//F.DEF aiGetImportFormatDescription
+//F.ARG u32
+//F.RET POINTER_void
+//
+//F.DEF aiSetImportPropertyInteger
+//F.ARG POINTER_void
+//F.ARG char*
+//F.ARG i32
+//F.RET Null
+//
+//F.DEF aiSetImportPropertyFloat
+//F.ARG POINTER_void
+//F.ARG char*
+//F.ARG f32
+//F.RET Null
+//
+//F.DEF aiSetImportPropertyString
+//F.ARG POINTER_void
+//F.ARG char*
+//F.ARG char*
+//F.RET Null
+//
+//F.DEF aiGetPredefinedLogStream
+//F.ARG i32
+//F.ARG char*
+//F.RET POINTER_void
+//
+//F.DEF aiAttachLogStream
+//F.ARG POINTER_void
+//F.RET Null
+//
+//F.DEF aiDetachLogStream
+//F.ARG POINTER_void
+//F.RET Null
+//
+//F.DEF aiDetachAllLogStreams
+//F.RET Null
+//
+//F.DEF aiGetVersionMajor
+//F.RET i32
+//
+//F.DEF aiGetVersionMinor
+//F.RET i32
+//
+//F.DEF aiGetVersionRevision
+//F.RET i32
+//
+//F.DEF aiGetCompileFlags
+//F.RET i32
+//
+//ENDLIBRARY
+//LIBRARY test
+//
+//C.DEF TestClass
+//C.CTOR i32
+//C.METHOD doSomething
+//C.ARG i32
+//C.RET Null
+//C.END
+//
+//F.DEF test
+//F.ARG i32
+//F.RET Null
+//
+//ENDLIBRARY

@@ -127,25 +127,33 @@ class ShaderBuilder:
             loc: int,
             dataSize: int,
             dataType=GL.GL_FLOAT,
-            normalized=GL.GL_FALSE
+            normalized=GL.GL_FALSE,
+            interleaved=True
         ):
-            data_type_size = self._sizeof_gl_type(dataType)
+        data_type_size = self._sizeof_gl_type(dataType)
+        if interleaved:
             stride = self.vertexSize * data_type_size
             offset = self.attributeIndex * data_type_size
+        else:
+            stride = 0
+            offset = 0
 
-            GL.glBindVertexArray(self.VAO)
-            GL.glVertexAttribPointer(
-                loc,
-                dataSize,
-                dataType,
-                normalized,
-                stride,
-                ctypes.c_void_p(offset)
-            )
-            GL.glEnableVertexAttribArray(loc)
+        GL.glBindVertexArray(self.VAO)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.VBOs[list(self.VBOs.keys())[-1]])
+        GL.glVertexAttribPointer(
+            loc,
+            dataSize,
+            dataType,
+            normalized,
+            stride,
+            ctypes.c_void_p(offset)
+        )
+        GL.glEnableVertexAttribArray(loc)
+        if interleaved:
             self.attributeIndex += dataSize
-            GL.glBindVertexArray(0)
-            return self
+        GL.glBindVertexArray(0)
+        return self
+
     def pack(self):
         GL.glBindVertexArray(0)
         GL.glBindBuffer(GL.GL_ARRAY_BUFFER, 0)
@@ -162,7 +170,7 @@ class ShaderBuilder:
             vertices = items[n][1]
             attribute = indexes[n]
             info(2, cstr(f"Setting data for VerticeMesh \"{name}\" with attribute indexes {attribute}"))
-            self = self.genVBO(name).bindVBO(name).VBOdata(vertices.vertices, dtype=np.float32).setAttribute(attribute[0], attribute[1])
+            self = self.genVBO(name).bindVBO(name).VBOdata(vertices.vertices, dtype=np.float32).setAttribute(attribute[0], attribute[1], interleaved=False)
             info(3, cstr(f"Successfully set data for VerticeMesh \"{name}\""))
         info(2, cstr("Successfully loaded model"))
         return self.pack()
