@@ -30,7 +30,7 @@ class CoolWindow(GameWindow):
 
     def update(self, deltatime: float):
         self.objects[-1]["wall1"].transform.position.x = 2 * (sin(self._time.total))
-        self.objects[-3]["mover"].transform.position.x = 3 + (10 * (sin(self._time.total)))
+        self.objects[-3]["mover"].transform.position.x = 3 + (10 * (sin(2 * self._time.total)))
         for layer, objs in self.objects.items():
             lockedObjects = {
                 key: val
@@ -57,7 +57,7 @@ class CoolWindow(GameWindow):
             for obj in objs.values():
                 if not obj.flags.get("locked"):
                     if obj.transform.position.y < -5:
-                        obj.setPos(vec3(0,5,-3))
+                        obj.setPos(vec3(0,5,0))
 
 
             # Update object states
@@ -89,7 +89,7 @@ class CoolWindow(GameWindow):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-        self.skybox = Skybox(vec3(0), vec3(0), "resources/textures/gorilaAplastarCiudadAtaquePrisionEscapaJuego2.png")
+        self.skybox = Skybox(vec3(0), vec3(0), "resources/textures/skyboxes/mountain2.png")
         self.skybox.rotVel.y = 1
         block = VerticeModel(
             {"vertices":
