@@ -56,7 +56,7 @@ class Obj:
 class VerticeModelObject(Obj):
     vm: 'VerticeModel'
     flags: dict[str, Any]
-    def __init__(self, vm: VerticeModel, pos: vec3, shaderBuilderInfo: tuple[ShaderBuilder, list[tuple[int, int]]], locked=False, rot: vec3= vec3(0), scale = vec3(1)):
+    def __init__(self, vm: VerticeModel, pos: vec3, shaderBuilderInfo: tuple[ShaderBuilder, list[tuple[int, int]]], locked=False, rot: vec3= vec3(0), scale = vec3(1), flags: dict[str, Any] = {}):
         self.transform = Transform(pos, rot)
         self.transform.scale = scale
         self.posVel = vec3(0.0)
@@ -64,6 +64,8 @@ class VerticeModelObject(Obj):
         self.vm = vm
         (self.shader, self.vao) = shaderBuilderInfo[0].fromVerticeModel(vm, shaderBuilderInfo[1])
         self.flags = {"locked": locked}
+        for fname, fval in flags.items():
+            self.flags[fname] = fval
     def update(self, dt: float):
         drag = 1
 
@@ -182,7 +184,50 @@ class Skybox(Obj):
         GL.glUseProgram(0)
         GL.glDepthMask(GL.GL_TRUE)
 
-def simpleRectangle(vm: VerticeModel, pos: vec3, rot:vec3 = vec3(0), scale:vec3 = vec3(1), shaderName: str = "test", locked: bool = True) -> VerticeModelObject:
+class PlayerObj2D(VerticeModelObject):
+    movespeed: float
+    jumpSpeed: float
+    canJump: bool = False
+    def __init__(self, vm: VerticeModel, pos: vec3, shaderBuilderInfo: tuple[ShaderBuilder, list[tuple[int, int]]], locked=False, rot: vec3= vec3(0), scale = vec3(1), flags: dict[str, Any] = {}, movespeed: float=50, jumpHeight:float=50):
+        super().__init__(vm, pos, shaderBuilderInfo, locked, rot, scale, flags)
+        self.movespeed = movespeed
+        self.jumpSpeed = jumpHeight
+
+    def jump(self, dt: float):
+        if self.canJump:
+            self.posVel.y += self.jumpSpeed * dt
+            self.canJump = False
+
+    def moveInDir(self, dt: float, dir: vec3):
+        self.posVel.x += dir * self.movespeed * dt
+
+    def update(self, dt: float):
+        drag = 1
+
+        self.transform.position.xy += self.posVel.xy * dt
+        self.transform.rotation += self.rotVel * dt
+
+        # exponential damping
+        self.posVel *= exp(-drag * dt)
+        self.rotVel *= exp(-drag * dt)
+
+        if length(self.posVel) < 1e-4:
+            self.posVel = vec3(0.0)
+        if length(self.rotVel) < 1e-4:
+            self.rotVel = vec3(0.0)
+        if self.rotVel.y > 15:
+            self.rotVel.y = 15
+        if self.rotVel.y < -15:
+            self.rotVel.y = -15
+
+        # if self.rotVel.x > 1:
+            # self.rotVel.x = 1
+        # if self.rotVel.x < -1:
+            # self.rotVel.x = -1
+
+        self.transform.update_matrix()
+
+def simpleRectangle(vm: VerticeModel, pos: vec3, rot:vec3 = vec3(0), scale:vec3 = vec3(1), shaderName: str = "test", locked: bool = True, flags: dict[str, Any] = {}) -> VerticeModelObject:
     return VerticeModelObject(
         shaderBuilderInfo=(
             ShaderBuilder(
@@ -198,5 +243,6 @@ def simpleRectangle(vm: VerticeModel, pos: vec3, rot:vec3 = vec3(0), scale:vec3 
         locked=locked,
         pos=pos,
         rot=rot,
-        scale=scale
+        scale=scale,
+        flags=flags
     )
