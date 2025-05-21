@@ -78,8 +78,6 @@ class VerticeModelObject(Obj):
             self.posVel = vec3(0.0)
         if length(self.rotVel) < 1e-4:
             self.rotVel = vec3(0.0)
-        if self.posVel.y > 15:
-            self.posVel.y = 15
 
         self.transform.update_matrix()
     def draw(self):

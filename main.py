@@ -7,15 +7,38 @@ logger.init(lib.getEnumV("logger", "LEVELS", "ERROR"))
 import OpenGL.GL as GL
 import glfw as GLFW
 
-from pyglm.glm import vec3, sin, cos, tan
+from pyglm.glm import vec3, sin, cos, tan, length, exp, vec2, mix
 from resources.scripts.shader import Shader
 from resources.scripts.glfwUtilities import getKeyPressed
 from resources.scripts.verticeMesh import VerticeMesh
 from resources.scripts.verticeModel import VerticeModel
 from resources.scripts.camera.camera3d import Camera3D
+from resources.scripts.object import VerticeModelObject
+from resources.scripts.shader import ShaderBuilder
 from resources.scripts.object import Obj, Skybox, simpleRectangle
 from resources.scripts.window.mouseHandler import MouseHandler
 from resources.scripts.gameWindow import GameWindow, default_window_hints, WindowHints
+
+class PlayerObj(VerticeModelObject):
+    def update(self, dt: float):
+        drag = 1
+
+        self.transform.position += self.posVel * dt
+        self.transform.rotation += self.rotVel * dt
+
+        # exponential damping
+        self.posVel *= exp(-drag * dt)
+        self.rotVel *= exp(-drag * dt)
+
+        if length(self.posVel) < 1e-4:
+            self.posVel = vec3(0.0)
+        if length(self.rotVel) < 1e-4:
+            self.rotVel = vec3(0.0)
+        if self.rotVel.y > 15:
+            self.rotVel.y = 15
+
+        self.transform.update_matrix()
+
 
 class CoolWindow(GameWindow):
     skybox   : Skybox
@@ -25,14 +48,15 @@ class CoolWindow(GameWindow):
         hints: WindowHints = default_window_hints()
         hints.viewport = resolution
         super().__init__(hints)
-        self.objects  : dict[int, dict[str,Obj]]    = {x: {} for x in range(-100,101)}
+        self.objects  : dict[int, dict[str,Obj]]    = {x: {} for x in range(-5,6)}
         self.shaders  : list[Shader] = []
         self.canJump = True
 
     def update(self, deltatime: float):
-        self.objects[-3]["mover"].transform.position.x =  60 + (5  * (cos(1 * self._time.total)))
-        self.objects[-3]["mover"].transform.position.y =  10 + (15 * (sin(1 * self._time.total)))
+        self.objects[0]["mover"].transform.position.x =  60 + (5  * (cos(1 * self._time.total)))
+        self.objects[0]["mover"].transform.position.y =  10 + (15 * (sin(1 * self._time.total)))
         self.canJump = False
+        print(f"FPS: {1/deltatime:>9.4f}")
         for layer, objs in self.objects.items():
             lockedObjects = {
                 key: val
@@ -51,7 +75,7 @@ class CoolWindow(GameWindow):
                     for ln, lo in lockedObjects.items():
                         collision, mtv, dir = getAABBCollision(obj.transform, lo.transform)
                         if collision:
-                            print(f"{on} colide with {ln} at {dir}!")
+                            # print(f"{on} colide with {ln} at {dir}!")
                             obj.transform.position -= 1* mtv  # Apply MTV to resolve the collision
                             obj.posVel -= 5 * mtv
                         if dir == AABBCollisionDirection.BOTTOM and not self.canJump:
@@ -85,7 +109,14 @@ class CoolWindow(GameWindow):
         #     self.camera.process_keyboard(7, deltatime)
         # if getKeyPressed(self.handle, GLFW.KEY_LEFT_CONTROL):
         #     self.camera.process_keyboard(6, deltatime)
-        self.camera.position.xy = self.objects[-3]["player"].transform.position.xy
+
+        # Interpolates between camera's and player's positions, so no snappy movement
+        self.camera.position.xy = mix(
+            self.camera.position.xy, # current
+            self.objects[0]["player"].transform.position.xy, # target
+            0.1 # lerp factor
+        )
+
 
         # set skybox position here because it will lag behind the camera if you dont
         self.skybox.transform.position = self.camera.position
@@ -97,7 +128,7 @@ class CoolWindow(GameWindow):
         GL.glEnable(GL.GL_CULL_FACE)
         GL.glEnable(GL.GL_BLEND)
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-        self.skybox = Skybox(vec3(0), vec3(0), "resources/textures/skyboxes/low_quality/winter1.jpg") # maybe use from https://mega.nz/folder/lvUSxaLA#9KIzwKK2LDNrsIpG9K0DZA
+        self.skybox = Skybox(vec3(0), vec3(0), "resources/textures/skyboxes/high_quality/mountain2.png") # maybe use from https://mega.nz/folder/lvUSxaLA#9KIzwKK2LDNrsIpG9K0DZA
         self.skybox.rotVel.y = 1
         block_gray = VerticeModel(
             {"vertices":
@@ -147,12 +178,28 @@ class CoolWindow(GameWindow):
                     ]
                 )
             })
-        self.objects[-3]["floor1"] = simpleRectangle(block_gray, pos=vec3(0,-5,0),scale=vec3(100,10,1))
-        self.objects[-3]["floor2"] = simpleRectangle(block_gray, pos=vec3(0,15,0),scale=vec3(100,10,1))
-        self.objects[-3]["wall1"] = simpleRectangle(block_gray, pos=vec3(-45,5,0),scale=vec3(10,30,1))
-        self.objects[-3]["wall2"] = simpleRectangle(block_gray, pos=vec3(75,5,0),scale=vec3(10,30,1))
-        self.objects[-3]["mover"] = simpleRectangle(block_gray, pos=vec3(55,20,0),scale=vec3(10,10,1))
-        self.objects[-3]["player"] = simpleRectangle(player_vm, pos=vec3(0,2,0), locked=False)
+        self.objects[0]["floor1"] = simpleRectangle(block_gray, pos=vec3(0,-5,0),scale=vec3(100,10,1))
+        self.objects[0]["floor2"] = simpleRectangle(block_gray, pos=vec3(0,15,0),scale=vec3(100,10,1))
+        self.objects[0]["wall1"] = simpleRectangle(block_gray, pos=vec3(-45,5,0),scale=vec3(10,30,1))
+        self.objects[0]["wall2"] = simpleRectangle(block_gray, pos=vec3(75,5,0),scale=vec3(10,30,1))
+        self.objects[0]["mover"] = simpleRectangle(block_gray, pos=vec3(55,20,0),scale=vec3(10,10,1))
+        self.objects[0]["player"] = PlayerObj(
+            shaderBuilderInfo=(
+                ShaderBuilder(
+                    "resources/shaders/test.vert",
+                    "resources/shaders/test.frag",
+                    2),
+                [
+                    (0, 2),
+                    (1, 3)
+                ]
+            ),
+            vm=player_vm,
+            locked=False,
+            pos=vec3(0,2,0),
+            rot=vec3(0),
+            scale=vec3(1)
+        )
         self.mouseHandler = MouseHandler()
         self.camera = Camera3D(move_speed=20, far=1000, position=vec3(0,0,15))
         # print(self.objects)
@@ -186,12 +233,12 @@ class CoolWindow(GameWindow):
             if key == GLFW.KEY_EQUAL:
                 self.set_cursor_mode(GLFW.CURSOR_DISABLED)
             if key == GLFW.KEY_LEFT:
-                self.objects[-3]["player"].posVel.x -= 5
+                self.objects[0]["player"].posVel.x -= 5
             if key == GLFW.KEY_RIGHT:
-                self.objects[-3]["player"].posVel.x += 5
+                self.objects[0]["player"].posVel.x += 5
             if key == GLFW.KEY_UP:
                 if self.canJump:
-                    self.objects[-3]["player"].posVel.y += 25
+                    self.objects[0]["player"].posVel.y += 25
                     self.canJump = False
 
     def on_resize(self, width, height):
