@@ -147,10 +147,10 @@ class CoolWindow(GameWindow):
                     [
                         0.25,0.25,0.3,
                         0.25,0.25,0.3,
+                        0.325, 0.325, 0.37,
                         0.25,0.25,0.3,
-                        0.25,0.25,0.3,
-                        0.25,0.25,0.3,
-                        0.25,0.25,0.3,
+                        0.325, 0.325, 0.37,
+                        0.325, 0.325, 0.37,
                     ]
                 )
             })
@@ -201,7 +201,7 @@ class CoolWindow(GameWindow):
             scale=vec3(1)
         )
         self.mouseHandler = MouseHandler()
-        self.camera = Camera3D(move_speed=20, far=1000, position=vec3(0,0,15))
+        self.camera = Camera3D(move_speed=20, far=1000, position=vec3(0,0,15), zoom = 75)
         # print(self.objects)
 
     def render(self):
