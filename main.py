@@ -1,26 +1,21 @@
-
 import lib
-lib.init(debug=True, debugLibInternals=True)
+lib.init(debug=False, debugLibInternals=False)
 logger = lib.getlib("logger")
-logger.init(lib.getEnumV("logger", "LEVELS", "TRACE"))
+logger.init(lib.getEnumV("logger", "LEVELS", "ERROR"))
 from resources.scripts.constants import MATH as MATH_CONSTANTS
 from resources.scripts.gameWindow import GameWindow, default_window_hints, WindowHints
 from resources.scripts.window.mouseHandler import MouseHandler
 from resources.scripts.shader import ShaderBuilder
-from resources.scripts.object import VerticeModelObject, Obj, Skybox, simpleRectangle, PlayerObj2D
+from resources.scripts.object import Obj, Skybox, simpleRectangle, PlayerObj2D
 from resources.scripts.camera.camera3d import Camera3D
 from resources.scripts.verticeModel import VerticeModel
 from resources.scripts.verticeMesh import VerticeMesh
 from resources.scripts.glfwUtilities import getKeyPressed
 from resources.scripts.shader import Shader
-from pyglm.glm import vec3, sin, cos, tan, length, exp, vec2, mix, pi
+from pyglm.glm import vec3, sin, cos, length, exp, vec2, mix, pi, abs, round, floor
 import glfw as GLFW
 import OpenGL.GL as GL
 from resources.scripts.physics.transform import getAABBCollision, AABBCollisionDirection
-
-
-
-
 
 class CoolWindow(GameWindow):
     skybox: Skybox
@@ -35,7 +30,7 @@ class CoolWindow(GameWindow):
         super().__init__(hints)
         self.objects: dict[int, dict[str, Obj]] = {x: {} for x in range(-5, 6)}
         self.shaders: list[Shader] = []
-        self.gravityMagnitude = vec3(0,40,0)
+        self.gravityMagnitude = vec3(0,80,0)
 
     def update(self, deltatime: float):
         self.objects[0]["mover"].transform.position.x = 60 + \
@@ -50,6 +45,14 @@ class CoolWindow(GameWindow):
             (5 * (sin(1 * self._time.total)))
         self.objects[0]["mover4"].transform.position.x = -45 + \
             (60 * (2 + sin(1 * self._time.total + MATH_CONSTANTS.PI)))
+        self.objects[0]["mover5"].transform.position.x = 97.5 + \
+            (5 * (sin(1 * self._time.total + MATH_CONSTANTS.PI)))
+        self.objects[0]["mover5"].transform.position.y = 107.5 + \
+            (15 * (sin(1 * self._time.total)))
+        self.objects[0]["mover6"].transform.position.x = 60 + \
+            (10 * (sin(2 * self._time.total)))
+        self.objects[0]["mover6"].transform.position.y = 115 + \
+            (5 * (cos(2 * self._time.total)))
         # print(f"FPS: {1/deltatime:>9.4f}")
         # print(f"Player posVel before update: {self.player.posVel}")
         self.player.canJump = False  # Reset canJump every frame
@@ -82,11 +85,13 @@ class CoolWindow(GameWindow):
                     self.player.transform, lo.transform)
                 if collision:
                     if lo.flags.get("kill"):  # Only reset if it's a kill zone
-                        self.player.setPos(
-                            vec3(0,5,0))
+                        self.player.respawn()
                         self.player.posVel = vec3(0)
                     else:
                         self.player.transform.position.xy -= mtv.xy
+                        self.player.posVel.xy -= mtv.xy
+                        if lo.flags.get("checkpoint") is True:
+                            self.player.setSpawn(lo.transform.position.xyz + vec3(0, lo.transform.scale.y, 0 ))
 
                         if dir == AABBCollisionDirection.BOTTOM:
                             if not self.player.canJump:
@@ -96,9 +101,18 @@ class CoolWindow(GameWindow):
                         elif dir == AABBCollisionDirection.TOP:
                             self.player.posVel.y = min(0, self.player.posVel.y)  # hitting ceiling
                         elif dir in (AABBCollisionDirection.LEFT, AABBCollisionDirection.RIGHT):
-                            self.player.posVel.x = -self.player.posVel.x * 0.25  # Cancel horizontal velocity on side impact
-                # if dir == AABBCollisionDirection.BOTTOM and not self.player.canJump:
-                #     self.player.canJump = True
+                            if lo.flags.get("noCancelXVelocity") is True:
+                                pass
+                            else:
+                                if lo.flags.get("bouncy") is True:
+                                    self.player.posVel.x = -self.player.posVel.x
+                                    if self.player.posVel.y > 0:
+                                        self.player.posVel.y += abs(self.player.posVel.x)
+                                else:
+                                    self.player.posVel.x = -self.player.posVel.x * 0.25
+                        if lo.flags.get("mover") is True:
+                            if length(abs(lo.posVel.y) - abs(self.player.posVel.y)) > 24:
+                                self.player.posVel.y += lo.posVel.y * 0.5
 
             # Bound checking
             for obj in objs.values():
@@ -151,7 +165,7 @@ class CoolWindow(GameWindow):
         self.skybox = Skybox(vec3(0), vec3(
             0), "resources/textures/skyboxes/low_quality/winter1.jpg")
         self.skybox.rotVel.y = 1
-        block_gray = VerticeModel(
+        block_vm = VerticeModel(
             {"vertices":
                 VerticeMesh(
                     [
@@ -240,36 +254,116 @@ class CoolWindow(GameWindow):
                     [
                         1.000, 0.0, 0.0,
                         1.000, 0.0, 0.0,
+                        1.000, 0.25, 0.0,
                         1.000, 0.0, 0.0,
-                        1.000, 0.0, 0.0,
-                        1.000, 0.0, 0.0,
-                        1.000, 0.0, 0.0
+                        1.000, 0.25, 0.0,
+                        1.000, 0.25, 0.0
+                    ]
+                )
+             })
+        bounce_vm = VerticeModel(
+            {"vertices":
+                VerticeMesh(
+                    [
+                        -0.5, -.5,
+                        0.5, -.5,
+                        0.5, .5,
+                        -0.5, -.5,
+                        0.5, .5,
+                        -0.5, .5,
+                    ]
+                ),
+                "colors":
+                VerticeMesh(
+                    [
+                        1.000, 0.5, 0.0,
+                        1.000, 0.5, 0.0,
+                        1.000, 0.75, 0.0,
+                        1.000, 0.5, 0.0,
+                        1.000, 0.75, 0.0,
+                        1.000, 0.75, 0.0
+                    ]
+                )
+             })
+        checkpoint_vm = VerticeModel(
+            {"vertices":
+                VerticeMesh(
+                    [
+                        -0.5, -.5,
+                        0.5, -.5,
+                        0.5, .5,
+                        -0.5, -.5,
+                        0.5, .5,
+                        -0.5, .5,
+                    ]
+                ),
+                "colors":
+                VerticeMesh(
+                    [
+                        0.000, 1.0, 0.0,
+                        0.000, 1.0, 0.0,
+                        0.000, 1.0, 0.0,
+                        0.000, 1.0, 0.0,
+                        0.000, 1.0, 0.0,
+                        0.000, 1.0, 0.0
                     ]
                 )
              })
         self.objects[0]["floor1"] = simpleRectangle(
-            block_gray, pos=vec3(0, -5, 0), scale=vec3(100, 10, 1))
+            block_vm, pos=vec3(0, -5, 0), scale=vec3(100, 10, 1))
         self.objects[0]["floor2"] = simpleRectangle(
-            block_gray, pos=vec3(0, 35, 0), scale=vec3(100, 50, 1))
+            block_vm, pos=vec3(0, 35, 0), scale=vec3(100, 50, 1))
         self.objects[0]["floor3"] = simpleRectangle(
-            block_gray, pos=vec3(130
+            block_vm, pos=vec3(130
                 , 25, 0), scale=vec3(45, 70, 1))
+        self.objects[0]["floor4"] = simpleRectangle(
+            block_vm, pos=vec3(130
+                , 80, 0), scale=vec3(45, 10, 1))
+        self.objects[0]["floor5"] = simpleRectangle(
+            block_vm, pos=vec3(112.5
+                , 90, 0), scale=vec3(10, 10, 1))
+        self.objects[0]["floor6"] = simpleRectangle(
+            block_vm, pos=vec3(130
+                , 120, 0), scale=vec3(45, 10, 1))
+        self.objects[0]["floor7"] = simpleRectangle(
+            block_vm, pos=vec3(0
+                , 160, 0), scale=vec3(55, 10, 1))
+        self.objects[0]["checkpoint1"] = simpleRectangle(
+            checkpoint_vm, pos=vec3(130
+                , 130, 0), scale=vec3(10, 10, 1), flags={"checkpoint": True})
+
         self.objects[0]["kill"] = simpleRectangle(kill_vm, pos=vec3(
             80+1/16, -11, 0), scale=vec3(65, 2, 1), flags={"kill": True})
         self.objects[0]["kill2"] = simpleRectangle(kill_vm, pos=vec3(
             -5, 70, 0), scale=vec3(20, 20, 1), flags={"kill": True})
+        self.objects[0]["kill3"] = simpleRectangle(kill_vm, pos=vec3(
+            85, 70, 0.01), scale=vec3(5, 20, 1), flags={"kill": True})
+        self.objects[0]["kill4"] = simpleRectangle(kill_vm, pos=vec3(
+            60, 115, 0.01), scale=vec3(1.5, 5, 1), flags={"kill": True})
         self.objects[0]["wall1"] = simpleRectangle(
-            block_gray, pos=vec3(-45, 5, 0), scale=vec3(10, 10, 1))
+            block_vm, pos=vec3(-45, 5, 0), scale=vec3(10, 10, 1))
         self.objects[0]["wall2"] = simpleRectangle(
-            block_gray, pos=vec3(75, 5, 0), scale=vec3(10, 30, 1))
+            block_vm, pos=vec3(75, 5, 0), scale=vec3(10, 30, 1))
         self.objects[0]["mover"] = simpleRectangle(
-            mover_vm, pos=vec3(55, 20, 0), scale=vec3(10, 10, 1))
+            mover_vm, pos=vec3(55, 20, 0), scale=vec3(10, 10, 1), flags={"noCancelXVelocity": True, "mover": True})
         self.objects[0]["mover2"] = simpleRectangle(
-            mover_vm, pos=vec3(95, 15, 0), scale=vec3(10, 10, 1))
+            mover_vm, pos=vec3(95, 15, 0), scale=vec3(10, 10, 1), flags={"noCancelXVelocity": True, "mover": True})
         self.objects[0]["mover3"] = simpleRectangle(
-            mover_vm, pos=vec3(95, 30, 0), scale=vec3(10, 10, 1))
+            mover_vm, pos=vec3(95, 30, 0), scale=vec3(10, 10, 1), flags={"noCancelXVelocity": True, "mover": True})
         self.objects[0]["mover4"] = simpleRectangle(
-            mover_vm, pos=vec3(10, 70, 0), scale=vec3(20, 20, 1))
+            mover_vm, pos=vec3(10, 70, 0), scale=vec3(20, 10, 1), flags={"noCancelXVelocity": True, "mover": True})
+        self.objects[0]["mover5"] = simpleRectangle(
+            mover_vm, pos=vec3(97.5, 92.5, 0), scale=vec3(10, 5, 1), flags={"noCancelXVelocity": True, "mover": True})
+        self.objects[0]["mover6"] = simpleRectangle(
+            mover_vm, pos=vec3(60, 115, 0), scale=vec3(10, 5, 1), flags={"noCancelXVelocity": True, "mover": True})
+        self.objects[0]["bounce1"] = simpleRectangle(
+            bounce_vm, pos=vec3(175, 70, 0), scale=vec3(20, 20, 1), flags={"bouncy": True})
+        self.objects[0]["bounce2"] = simpleRectangle(
+            bounce_vm, pos=vec3(30, 145, 0), scale=vec3(5, 40, 1), flags={"bouncy": True})
+        self.objects[0]["bounce3"] = simpleRectangle(
+            bounce_vm, pos=vec3(50, 155, 0), scale=vec3(5, 20, 1), flags={"bouncy": True})
+        # self.objects[0]["test1"] = simpleRectangle(
+        #     block_vm, pos=vec3(0, 0, 0), scale=vec3(5, 5, 1))
         self.player = PlayerObj2D(
             shaderBuilderInfo=(
                 ShaderBuilder(
@@ -290,6 +384,7 @@ class CoolWindow(GameWindow):
         self.mouseHandler = MouseHandler()
         self.camera = Camera3D(move_speed=20, far=1000,
                                position=vec3(0, 0, 30), zoom=75)
+        # self.player.setSpawn(vec3(130,140,0))
         self.player.respawn()
         # print(self.objects)
 
@@ -298,6 +393,7 @@ class CoolWindow(GameWindow):
         GL.glClear(GL.GL_COLOR_BUFFER_BIT)  # clear the color buffer
         cameraProj = self.camera.getProjectionMatrix()
         cameraView = self.camera.getViewMatrix()
+        fogDensity = self.player.transform.position.y * 0.0001
         self.skybox.shader.activate()
         self.skybox.shader.setMat4fv("projection", cameraProj)
         self.skybox.shader.setMat4fv("view", cameraView)
@@ -308,14 +404,14 @@ class CoolWindow(GameWindow):
                 o.shader.setMat4fv("projection", cameraProj)
                 o.shader.setMat4fv("view", cameraView)
                 o.shader.setVec3f("fogColor", 0.969, 0.969, 0.969)
-                o.shader.setFloat("fogDensity", .001)
+                o.shader.setFloat("fogDensity", fogDensity)
                 o.shader.setFloat("layer", float(layer))
                 o.draw()
         self.player.shader.activate()
         self.player.shader.setMat4fv("projection", cameraProj)
         self.player.shader.setMat4fv("view", cameraView)
         self.player.shader.setVec3f("fogColor", 0.969, 0.969, 0.969)
-        self.player.shader.setFloat("fogDensity", .001)
+        self.player.shader.setFloat("fogDensity", fogDensity)
         self.player.shader.setFloat("layer", 0)
         self.player.draw()
 
@@ -339,7 +435,7 @@ class CoolWindow(GameWindow):
             self.camera.process_mouse(
                 self.mouseHandler.x_offset, self.mouseHandler.y_offset)
 
-    def on_scroll(self, xoffset, yoffset):
+    def on_scroll2(self, xoffset, yoffset):
         self.camera.process_scroll(yoffset)
 
 
