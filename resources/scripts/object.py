@@ -188,18 +188,31 @@ class PlayerObj2D(VerticeModelObject):
     movespeed: float
     jumpSpeed: float
     canJump: bool = False
-    def __init__(self, vm: VerticeModel, pos: vec3, shaderBuilderInfo: tuple[ShaderBuilder, list[tuple[int, int]]], locked=False, rot: vec3= vec3(0), scale = vec3(1), flags: dict[str, Any] = {}, movespeed: float=50, jumpHeight:float=50):
+    spawn: vec3
+    __defaultSpawn: vec3
+    def __init__(self, vm: VerticeModel, pos: vec3, shaderBuilderInfo: tuple[ShaderBuilder, list[tuple[int, int]]], locked=False, rot: vec3= vec3(0), scale = vec3(1), flags: dict[str, Any] = {}, movespeed: float=50, jumpHeight:float=20, spawn = vec3(0)):
         super().__init__(vm, pos, shaderBuilderInfo, locked, rot, scale, flags)
         self.movespeed = movespeed
         self.jumpSpeed = jumpHeight
+        self.spawn = spawn
+        self.__defaultSpawn = spawn
+
+    def respawn(self):
+        self.transform.position = self.spawn.xyz
+
+    def setSpawn(self, newSpawn: vec3):
+        self.spawn = newSpawn.xyz
+
+    def resetSpawn(self):
+        self.spawn = self.__defaultSpawn.xyz
 
     def jump(self, dt: float):
         if self.canJump:
-            self.posVel.y += self.jumpSpeed * dt
+            self.posVel.y += self.jumpSpeed * 100 * dt
             self.canJump = False
 
     def moveInDir(self, dt: float, dir: vec3):
-        self.posVel.x += dir * self.movespeed * dt
+        self.posVel += dir * self.movespeed * dt
 
     def update(self, dt: float):
         drag = 1
@@ -215,10 +228,10 @@ class PlayerObj2D(VerticeModelObject):
             self.posVel = vec3(0.0)
         if length(self.rotVel) < 1e-4:
             self.rotVel = vec3(0.0)
-        if self.rotVel.y > 15:
-            self.rotVel.y = 15
-        if self.rotVel.y < -15:
-            self.rotVel.y = -15
+        if self.posVel.y > 100:
+            self.posVel.y = 100
+        if self.posVel.y < -45:
+            self.posVel.y = -45
 
         # if self.rotVel.x > 1:
             # self.rotVel.x = 1

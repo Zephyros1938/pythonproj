@@ -27,6 +27,7 @@ class CoolWindow(GameWindow):
     player: PlayerObj2D
     objects: dict[int, dict[str, Obj]]
     shaders: list[Shader]
+    gravityMagnitude: vec3
 
     def __init__(self, resolution: tuple[int, int] = (800, 600)):
         hints: WindowHints = default_window_hints()
@@ -34,7 +35,7 @@ class CoolWindow(GameWindow):
         super().__init__(hints)
         self.objects: dict[int, dict[str, Obj]] = {x: {} for x in range(-5, 6)}
         self.shaders: list[Shader] = []
-        self.spawnPos = vec3(0, 5, 0)
+        self.gravityMagnitude = vec3(0,40,0)
 
     def update(self, deltatime: float):
         self.objects[0]["mover"].transform.position.x = 60 + \
@@ -49,7 +50,11 @@ class CoolWindow(GameWindow):
             (5 * (sin(1 * self._time.total)))
         self.objects[0]["mover4"].transform.position.x = -45 + \
             (60 * (2 + sin(1 * self._time.total + MATH_CONSTANTS.PI)))
-        print(f"FPS: {1/deltatime:>9.4f}")
+        # print(f"FPS: {1/deltatime:>9.4f}")
+        # print(f"Player posVel before update: {self.player.posVel}")
+        self.player.canJump = False  # Reset canJump every frame
+
+
         for layer, objs in self.objects.items():
             lockedObjects = {
                 key: val
@@ -60,7 +65,7 @@ class CoolWindow(GameWindow):
             # Apply physics (gravity, motion)
             for name, obj in objs.items():
                 if not obj.flags.get("locked"):
-                    obj.posVel.y -= 0.45
+                    obj.posVel -= self.gravityMagnitude * deltatime
 
             # Resolve collisions
             for on, obj in objs.items():
@@ -76,43 +81,53 @@ class CoolWindow(GameWindow):
                 collision, mtv, dir = getAABBCollision(
                     self.player.transform, lo.transform)
                 if collision:
-                    # print(f"{on} colide with {ln} at {dir}!")
-                    self.player.setPos(
-                        vec3(self.spawnPos.x, self.spawnPos.y, self.spawnPos.z))
-                    self.player.posVel = vec3(0)
-                    self.player.transform.position.xy -= mtv.xy  # Apply MTV to resolve the collision
-                    self.player.posVel.xy -=  mtv.xy
-                if dir == AABBCollisionDirection.BOTTOM and not self.player.canJump:
-                    self.player.canJump = True
+                    if lo.flags.get("kill"):  # Only reset if it's a kill zone
+                        self.player.setPos(
+                            vec3(0,5,0))
+                        self.player.posVel = vec3(0)
+                    else:
+                        self.player.transform.position.xy -= mtv.xy
+
+                        if dir == AABBCollisionDirection.BOTTOM:
+                            if not self.player.canJump:
+                                self.player.canJump = True
+                            if not self.player.canJump or self.player.posVel.y < 0:
+                                self.player.posVel.y = 0  # Cancel vertical velocity on ground
+                        elif dir == AABBCollisionDirection.TOP:
+                            self.player.posVel.y = min(0, self.player.posVel.y)  # hitting ceiling
+                        elif dir in (AABBCollisionDirection.LEFT, AABBCollisionDirection.RIGHT):
+                            self.player.posVel.x = -self.player.posVel.x * 0.25  # Cancel horizontal velocity on side impact
+                # if dir == AABBCollisionDirection.BOTTOM and not self.player.canJump:
+                #     self.player.canJump = True
 
             # Bound checking
             for obj in objs.values():
                 if not obj.flags.get("locked"):
                     if obj.transform.position.y < -50:
-                        obj.setPos(
-                            vec3(self.spawnPos.x, self.spawnPos.y, self.spawnPos.z))
+                        obj.setPos(vec3(0,5,0))
                         obj.posVel = vec3(0)
 
             # Update object states
             for obj in objs.values():
                 obj.update(deltatime)
 
-        self.player.posVel.y -= 0.45
+        self.player.posVel -= self.gravityMagnitude * deltatime
+        if self.player.transform.position.y < -50:
+            self.player.respawn()
         self.player.update(deltatime)
 
+        if getKeyPressed(self.handle, GLFW.KEY_A):
+            self.player.moveInDir(deltatime, vec3(-1,0,0))
+        if getKeyPressed(self.handle, GLFW.KEY_D):
+            self.player.moveInDir(deltatime, vec3(1,0,0))
+        if getKeyPressed(self.handle, GLFW.KEY_SPACE):
+            self.player.jump(deltatime)
         if getKeyPressed(self.handle, GLFW.KEY_UP):
             self.camera.process_keyboard(0, deltatime)
         if getKeyPressed(self.handle, GLFW.KEY_DOWN):
             self.camera.process_keyboard(1, deltatime)
-        if getKeyPressed(self.handle, GLFW.KEY_A):
-            self.player.moveInDir(deltatime, vec3(1,0,0))
-        if getKeyPressed(self.handle, GLFW.KEY_D):
-            self.player.moveInDir(deltatime, vec3(-1,0,0))
-        if getKeyPressed(self.handle, GLFW.KEY_SPACE):
-            self.player.jump(deltatime)
         if getKeyPressed(self.handle, GLFW.KEY_R):
-            self.player.setPos(
-                vec3(self.spawnPos.x, self.spawnPos.y, self.spawnPos.z))
+            self.player.respawn()
             self.player.posVel = vec3(0)
 
         # Interpolates between camera's and player's positions, so no snappy movement
@@ -134,7 +149,7 @@ class CoolWindow(GameWindow):
         GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
         # maybe use from https://mega.nz/folder/lvUSxaLA#9KIzwKK2LDNrsIpG9K0DZA
         self.skybox = Skybox(vec3(0), vec3(
-            0), "resources/textures/skyboxes/high_quality/sky1.png")
+            0), "resources/textures/skyboxes/low_quality/winter1.jpg")
         self.skybox.rotVel.y = 1
         block_gray = VerticeModel(
             {"vertices":
@@ -175,12 +190,12 @@ class CoolWindow(GameWindow):
                 "colors":
                 VerticeMesh(
                     [
-                        1.000, 0.984, 0.902,
-                        1.000, 0.984, 0.902,
-                        1.000, 0.984, 0.902,
-                        1.000, 0.984, 0.902,
-                        1.000, 0.984, 0.902,
-                        1.000, 0.984, 0.902
+                        0.500, 0.984, 0.902,
+                        0.500, 0.984, 0.902,
+                        0.500, 0.984, 0.902,
+                        0.500, 0.984, 0.902,
+                        0.500, 0.984, 0.902,
+                        0.500, 0.984, 0.902
                     ]
                 )
              })
@@ -212,12 +227,12 @@ class CoolWindow(GameWindow):
             {"vertices":
                 VerticeMesh(
                     [
-                        -1, -1,
-                        1, -1,
-                        1,  1,
-                        -1, -1,
-                        1,  1,
-                        -1,  1
+                        -0.5, -.5,
+                        0.5, -.5,
+                        0.5, .5,
+                        -0.5, -.5,
+                        0.5, .5,
+                        -0.5, .5,
                     ]
                 ),
                 "colors":
@@ -236,12 +251,15 @@ class CoolWindow(GameWindow):
             block_gray, pos=vec3(0, -5, 0), scale=vec3(100, 10, 1))
         self.objects[0]["floor2"] = simpleRectangle(
             block_gray, pos=vec3(0, 35, 0), scale=vec3(100, 50, 1))
+        self.objects[0]["floor3"] = simpleRectangle(
+            block_gray, pos=vec3(130
+                , 25, 0), scale=vec3(45, 70, 1))
         self.objects[0]["kill"] = simpleRectangle(kill_vm, pos=vec3(
-            60, -11, 0), scale=vec3(20, 1, 1), flags={"kill": True})
+            80+1/16, -11, 0), scale=vec3(65, 2, 1), flags={"kill": True})
         self.objects[0]["kill2"] = simpleRectangle(kill_vm, pos=vec3(
-            -5, 70, 0), scale=vec3(10, 10, 1), flags={"kill": True})
+            -5, 70, 0), scale=vec3(20, 20, 1), flags={"kill": True})
         self.objects[0]["wall1"] = simpleRectangle(
-            block_gray, pos=vec3(-45, 5, 0), scale=vec3(10, 30, 1))
+            block_gray, pos=vec3(-45, 5, 0), scale=vec3(10, 10, 1))
         self.objects[0]["wall2"] = simpleRectangle(
             block_gray, pos=vec3(75, 5, 0), scale=vec3(10, 30, 1))
         self.objects[0]["mover"] = simpleRectangle(
@@ -263,14 +281,16 @@ class CoolWindow(GameWindow):
             ),
             vm=player_vm,
             locked=False,
-            pos=vec3(0, 2, 0),
+            pos=vec3(0, 5, 0),
             rot=vec3(0),
             scale=vec3(2.5, 2.5, 1),
-            flags={"player": True}
+            flags={"player": True},
+            spawn=vec3(0, 5, 0)
         )
         self.mouseHandler = MouseHandler()
         self.camera = Camera3D(move_speed=20, far=1000,
                                position=vec3(0, 0, 30), zoom=75)
+        self.player.respawn()
         # print(self.objects)
 
     def render(self):
